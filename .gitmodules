@@ -106,3 +106,6 @@
 [submodule "third_party/tests/uvm-1.2"]
 	path = third_party/tests/uvm-1.2
 	url = https://github.com/chipsalliance/uvm-verilator.git
+[submodule "third_party/tools/verihogg-lint"]
+	path = third_party/tools/verihogg-lint
+	url = https://github.com/verihogg/verihogg-lint

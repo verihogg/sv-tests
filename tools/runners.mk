@@ -164,7 +164,22 @@ $(INSTALL_DIR)/bin/circt-verilog:
 		-DCIRCT_SLANG_FRONTEND_ENABLED=ON
 	$(MAKE) -C $(RDIR)/circt-verilog/build install-circt-verilog
 
+# verihogg-lint
+verihogg-lint: $(INSTALL_DIR)/bin/verihogg-lint
+
+$(INSTALL_DIR)/bin/verihogg-lint: surelog
+	mkdir -p $(RDIR)/verihogg-lint/build
+	cd $(RDIR)/verihogg-lint/build && cmake .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR) \
+		-DSURELOG_ROOT=$(INSTALL_DIR) \
+		-DUHDM_ROOT=$(INSTALL_DIR) \
+		-DANTLR4_ROOT=$(INSTALL_DIR) \
+		-DCAPNP_ROOT=$(INSTALL_DIR)
+	$(MAKE) -C $(RDIR)/verihogg-lint/build
+	install -D $(RDIR)/verihogg-lint/build/bin/verihogg-lint $@
+
 # setup the dependencies
-RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog
+RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog verihogg-lint
 .PHONY: $(RUNNERS_TARGETS)
 runners: $(RUNNERS_TARGETS)
