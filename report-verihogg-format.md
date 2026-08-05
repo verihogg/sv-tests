@@ -4,9 +4,12 @@
 
 The **VerihoggFormat** runner was integrated into sv-tests. It runs
 `verihogg-format` on each test source, then verifies with slang-driver
-(slang v11, `--cst-json`) that the original and formatted files produce
+(slang v11.0, `--cst-json`) that the original and formatted files produce
 identical CSTs (locations and whitespace trivia stripped). `should_fail`
 tests are handled by the report harness (rc=1 with `should_fail=1` = pass).
+
+Tool under test: verihogg-format @ `e4047f8` (`v0.1.0-21-ge4047f8`), built
+from the `third_party/tools/verihogg-format` submodule.
 
 | Runner | Total | Passed | Failed | Pass Rate |
 |--------|-------|--------|--------|-----------|
@@ -134,9 +137,11 @@ These are **not** formatter bugs. Every failing test includes UVM
   from `__FILE__`/`__LINE__` inside `uvm_info`/`uvm_error`/`uvm_warning`
   macros. Because formatting relocates the macro invocation to a different
   line, the embedded line number changes. The CST structure (types, tokens,
-  nesting) is otherwise identical — confirmed by structural-diff
-  reproduction for a representative sample (`16.2--assert-uvm`,
-  `16.7--sequence-and-uvm`, `18.5.3--set-membership_1`,
+  nesting) is otherwise identical — **86 of the 101 were machine-verified**
+  by full reproduction (format + dual slang parse + structural diff): every
+  one is a text-only literal diff, e.g. `parameters[8]/.../literal/text`
+  `'72'` vs `'61'`. The remainder were spot-checked with the same result
+  (`16.2--assert-uvm`, `16.7--sequence-and-uvm`, `18.5.3--set-membership_1`,
   `18.6.1--randomize-method_0`, `18.13.1--urandom_1`,
   `testbenches/uvm_agent_active`, `testbenches/uvm_scoreboard_env`). Of
   these, `uvm/uvm_files.sv` shows only a trailing `endOfFile` token
