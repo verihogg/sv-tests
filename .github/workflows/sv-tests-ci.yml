@@ -56,6 +56,8 @@ jobs:
           - name: verihogg-lint
             deps: cmake default-jre pkg-config tclsh uuid-dev libyaml-cpp-dev
             submodules: third_party/UHDM third_party/antlr4 third_party/googletest
+          - name: verihogg-format
+            deps: cmake pkg-config
           - name: circt-verilog
             deps: clang ninja-build lld
             cmake_ver: ">=3.28"

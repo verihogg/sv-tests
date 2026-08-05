@@ -109,3 +109,6 @@
 [submodule "third_party/tools/verihogg-lint"]
 	path = third_party/tools/verihogg-lint
 	url = https://github.com/verihogg/verihogg-lint
+[submodule "third_party/tools/verihogg-format"]
+	path = third_party/tools/verihogg-format
+	url = https://github.com/verihogg/verihogg-format

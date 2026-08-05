@@ -179,7 +179,19 @@ $(INSTALL_DIR)/bin/verihogg-lint: surelog
 	$(MAKE) -C $(RDIR)/verihogg-lint/build
 	install -D $(RDIR)/verihogg-lint/build/bin/verihogg-lint $@
 
+# verihogg-format
+verihogg-format: $(INSTALL_DIR)/bin/verihogg-format
+
+$(INSTALL_DIR)/bin/verihogg-format: slang
+	cd $(RDIR)/slang/build && cmake --install . --prefix $(INSTALL_DIR)
+	mkdir -p $(RDIR)/verihogg-format/build
+	cd $(RDIR)/verihogg-format/build && cmake .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_PREFIX_PATH=$(INSTALL_DIR)
+	$(MAKE) -C $(RDIR)/verihogg-format/build
+	install -D $(RDIR)/verihogg-format/build/bin/verihogg-format $@
+
 # setup the dependencies
-RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog verihogg-lint
+RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog verihogg-lint verihogg-format
 .PHONY: $(RUNNERS_TARGETS)
 runners: $(RUNNERS_TARGETS)
