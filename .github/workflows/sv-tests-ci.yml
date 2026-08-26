@@ -2,8 +2,6 @@ name: sv-tests-ci
 
 on:
   push:
-    branches:
-      - master
   pull_request:
   workflow_dispatch:
   schedule:
@@ -64,16 +62,13 @@ jobs:
             submodules: llvm
     env:
       RUNNERS_FILTER: ${{ matrix.tool.runners_filter }}
-      CCACHE_DIR: "/root/sv-tests/sv-tests/.cache/"
+      CCACHE_DIR: "${{ github.workspace }}/.cache/"
       # those generators can use a lot of RAM/cpu and starve other tests
       # tests from those generators are run without "-j" flag
       BIG_GENERATORS: "fusesoc black-parrot"
       DEBIAN_FRONTEND: "noninteractive"
-      GHA_MACHINE_TYPE: "n2-highmem-16"
-
     name: ${{ matrix.tool.name }}
-    runs-on: [self-hosted, Linux, X64, gcp-custom-runners]
-    container: ubuntu:jammy-20221130
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel previous
         uses: styfle/cancel-workflow-action@0.8.0
@@ -172,7 +167,7 @@ jobs:
         timeout-minutes: 3
         continue-on-error: true
         with:
-          path: "/root/sv-tests/sv-tests/.cache/"
+          path: "${{ github.workspace }}/.cache/"
           key: cache_${{ matrix.tool.name }}_${{ steps.cache_timestamp.outputs.time }}
           restore-keys: cache_${{ matrix.tool.name }}_
       - name: Build
@@ -212,8 +207,7 @@ jobs:
 
   Summary:
     name: Summary
-    runs-on: [self-hosted, Linux, X64, gcp-custom-runners]
-    container: ubuntu:jammy-20221130
+    runs-on: ubuntu-22.04
     needs: Run
     env:
       ANALYZER: "$PWD/tools/report_analyzer.py"
