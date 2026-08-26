@@ -52,10 +52,10 @@ jobs:
             deps: bison clang tcl-dev flex libfl-dev pkg-config libreadline-dev cmake pkg-config
             submodules: third_party/slang
           - name: verihogg-lint
-            deps: cmake default-jre pkg-config tclsh uuid-dev libyaml-cpp-dev
+            deps:
             nix: true
           - name: verihogg-format
-            deps: cmake pkg-config
+            deps:
             nix: true
           - name: circt-verilog
             deps: clang ninja-build lld
@@ -177,7 +177,7 @@ jobs:
           path: "${{ github.workspace }}/.cache/"
           key: cache_${{ matrix.tool.name }}_${{ steps.cache_timestamp.outputs.time }}
           restore-keys: cache_${{ matrix.tool.name }}_
-      - name: Install Nix
+      - name: Install Nix (if needed)
         if: ${{ matrix.tool.nix }}
         uses: DeterminateSystems/nix-installer-action@v16
       - name: Build
