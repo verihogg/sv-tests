@@ -53,10 +53,10 @@ jobs:
             submodules: third_party/slang
           - name: verihogg-lint
             deps: cmake default-jre pkg-config tclsh uuid-dev libyaml-cpp-dev
-            checkout_extras: third_party/tools/Surelog
+            nix: true
           - name: verihogg-format
             deps: cmake pkg-config
-            checkout_extras: third_party/tools/slang
+            nix: true
           - name: circt-verilog
             deps: clang ninja-build lld
             cmake_ver: ">=3.28"
@@ -177,12 +177,22 @@ jobs:
           path: "${{ github.workspace }}/.cache/"
           key: cache_${{ matrix.tool.name }}_${{ steps.cache_timestamp.outputs.time }}
           restore-keys: cache_${{ matrix.tool.name }}_
+      - name: Install Nix
+        if: ${{ matrix.tool.nix }}
+        uses: DeterminateSystems/nix-installer-action@v16
       - name: Build
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           [[ -f $HOME/.cargo/env ]] && source $HOME/.cargo/env
           . "$HOME/.bash_profile"  # GitHub Actions runs bash with --noprofile
-          make ${{ matrix.tool.name }} -j$(nproc)
+          if [[ "${{ matrix.tool.nix }}" == "true" ]]; then
+            cd third_party/tools/${{ matrix.tool.name }}
+            nix build .#${{ matrix.tool.name }}
+            mkdir -p ${{ github.workspace }}/out/runners/bin
+            cp result/bin/* ${{ github.workspace }}/out/runners/bin/
+          else
+            make ${{ matrix.tool.name }} -j$(nproc)
+          fi
       - name: Check
         run:
           make info
