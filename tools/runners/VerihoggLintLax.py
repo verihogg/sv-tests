@@ -14,8 +14,8 @@ from BaseRunner import BaseRunner
 
 class VerihoggLintLax(BaseRunner):
     def __init__(self):
-        super().__init__("VerihoggLintLax", "verihogg-lint",
-                         {'parsing', 'elaboration'})
+        super().__init__(
+            "VerihoggLintLax", "verihogg-lint", {'parsing', 'elaboration'})
 
         self.submodule = "third_party/tools/verihogg-lint"
         self.url = f"https://github.com/verihogg/verihogg-lint/tree/{self.get_commit()}"
