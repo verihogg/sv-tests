@@ -109,16 +109,16 @@ class VerihoggFormat(BaseRunner):
             orig_log, orig_rc = self._run(orig_cmd, tmp_dir, timeout)
             if orig_rc != 0:
                 return (
-                    invocation + f"slang-driver (original) {orig}\n" + orig_log,
-                    1) + self._profile()
+                    invocation + f"slang-driver (original) {orig}\n" +
+                    orig_log, 1) + self._profile()
 
             fmt_cmd_slang = slang_base + ["--cst-json", fmt_json, fmt]
             fmt_slang_log, fmt_slang_rc = self._run(
                 fmt_cmd_slang, tmp_dir, timeout)
             if fmt_slang_rc != 0:
                 return (
-                    invocation + f"slang-driver (formatted) {fmt}\n" + fmt_slang_log,
-                    1) + self._profile()
+                    invocation + f"slang-driver (formatted) {fmt}\n" +
+                    fmt_slang_log, 1) + self._profile()
 
             try:
                 with open(orig_json) as jf:
@@ -142,10 +142,7 @@ class VerihoggFormat(BaseRunner):
 
     def _run(self, cmd, cwd, timeout):
         proc = subprocess.Popen(
-            cmd,
-            cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         try:
             log, _ = proc.communicate(timeout=timeout)
             return (log.decode('utf-8', 'ignore'), proc.returncode)
