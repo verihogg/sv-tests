@@ -53,9 +53,10 @@ jobs:
             submodules: third_party/slang
           - name: verihogg-lint
             deps: cmake default-jre pkg-config tclsh uuid-dev libyaml-cpp-dev
-            submodules: third_party/UHDM third_party/antlr4 third_party/googletest
+            checkout_extras: third_party/tools/Surelog
           - name: verihogg-format
             deps: cmake pkg-config
+            checkout_extras: third_party/tools/slang
           - name: circt-verilog
             deps: clang ninja-build lld
             cmake_ver: ">=3.28"
@@ -153,6 +154,11 @@ jobs:
             pushd third_party/tools/${REPOSITORY_NAME}
             git submodule update --init --recursive --depth 1 ${{ matrix.tool.submodules }}
             popd
+          fi
+          if [[ ! -z "${{ matrix.tool.checkout_extras }}" ]]; then
+            for extra in ${{ matrix.tool.checkout_extras }}; do
+              git submodule update --init --recursive --depth 1 $extra
+            done
           fi
           # yosys tool contains tests, is a dependency of other tools
           git submodule update --init --recursive --depth 1 third_party/tools/yosys
