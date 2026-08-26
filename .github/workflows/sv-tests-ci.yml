@@ -192,7 +192,8 @@ jobs:
             nix build .#${{ matrix.tool.name }}
             mkdir -p ${{ github.workspace }}/out/runners/bin
             cp result/bin/* ${{ github.workspace }}/out/runners/bin/
-            nix-store -qR result | xargs -I{} find {} -name "slang-driver" -exec cp {} ${{ github.workspace }}/out/runners/bin/ \; 2>/dev/null || true
+            slang_store=$(nix build --no-link --print-out-paths nixpkgs#sv-lang)
+            cp "${slang_store}/bin/slang" ${{ github.workspace }}/out/runners/bin/slang-driver
             echo "${{ github.workspace }}/out/runners/bin" >> $GITHUB_PATH
           else
             make ${{ matrix.tool.name }} -j$(nproc)
