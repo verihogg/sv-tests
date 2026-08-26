@@ -186,7 +186,9 @@ jobs:
           [[ -f $HOME/.cargo/env ]] && source $HOME/.cargo/env
           . "$HOME/.bash_profile"  # GitHub Actions runs bash with --noprofile
           if [[ "${{ matrix.tool.nix }}" == "true" ]]; then
-            cd third_party/tools/${{ matrix.tool.name }}
+            tmpdir=$(mktemp -d)
+            rsync -a --exclude='.git' third_party/tools/${{ matrix.tool.name }}/ "$tmpdir/"
+            cd "$tmpdir"
             nix build .#${{ matrix.tool.name }}
             mkdir -p ${{ github.workspace }}/out/runners/bin
             cp result/bin/* ${{ github.workspace }}/out/runners/bin/
