@@ -28,10 +28,7 @@ jobs:
       DEBIAN_FRONTEND: "noninteractive"
     name: ${{ matrix.tool.name }}
     runs-on: self-hosted
-    container:
-      image: ubuntu:jammy-20221130
-      volumes:
-        - /nix:/nix
+    container: ubuntu:jammy-20221130
     steps:
       - name: Cancel previous
         uses: styfle/cancel-workflow-action@0.13.1
