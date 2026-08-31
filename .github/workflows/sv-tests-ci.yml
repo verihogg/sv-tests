@@ -31,7 +31,7 @@ jobs:
     container: ubuntu:jammy-20221130
     steps:
       - name: Cancel previous
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@0.13.1
         with:
           access_token: ${{ github.token }}
       - name: Show shell
@@ -138,7 +138,9 @@ jobs:
           restore-keys: cache_${{ matrix.tool.name }}_
       - name: Install Nix (if needed)
         if: ${{ matrix.tool.nix }}
-        uses: DeterminateSystems/nix-installer-action@v16
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Build
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
