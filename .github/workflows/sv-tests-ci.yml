@@ -33,10 +33,10 @@ jobs:
       volumes:
         - /nix:/nix
     steps:
-      - name: Cancel previous
-        uses: styfle/cancel-workflow-action@0.13.1
-        with:
-          access_token: ${{ github.token }}
+      # - name: Cancel previous
+      #   uses: styfle/cancel-workflow-action@0.13.1
+      #   with:
+      #     access_token: ${{ github.token }}
       - name: Show shell
         run: |
           echo "$SHELL"
