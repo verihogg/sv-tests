@@ -46,6 +46,7 @@ jobs:
       - name: Install git
         run: |
           apt-get install -y git
+          git config --global --add safe.directory '*'
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Setup Node
