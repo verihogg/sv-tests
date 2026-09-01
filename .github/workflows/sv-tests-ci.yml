@@ -16,11 +16,9 @@ jobs:
           - name: verihogg-lint
             deps:
             nix: true
-            make_jobs_max: 1
           - name: verihogg-format
             deps:
             nix: true
-            make_jobs_max: 1
     env:
       RUNNERS_FILTER: ${{ matrix.tool.runners_filter }}
       CCACHE_DIR: "${{ github.workspace }}/.cache/"
@@ -29,10 +27,11 @@ jobs:
       BIG_GENERATORS: "fusesoc black-parrot"
       DEBIAN_FRONTEND: "noninteractive"
     name: ${{ matrix.tool.name }}
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
+    container: ubuntu:jammy-20221130
     steps:
       - name: Cancel previous
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@0.13.1
         with:
           access_token: ${{ github.token }}
       - name: Show shell
@@ -42,10 +41,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Update apt repos
         run: |
-          sudo apt-get update -qq
+          apt-get update -qq
       - name: Setup Node
         run: |
-          sudo apt -qq -y install curl
+          apt -qq -y install curl
           touch "$HOME/.bash_profile"
           # From https://nodejs.org/en/download
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
@@ -54,36 +53,36 @@ jobs:
       - name: Add bazel repo (if needed)
         if: ${{ contains(matrix.tool.deps, 'bazel') }}
         run: |
-          sudo apt -qq -y install apt-transport-https curl gnupg
+          apt -qq -y install apt-transport-https curl gnupg
           curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
           chmod a+r bazel.gpg
-          sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-          echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-          sudo apt-get update -qq
+          mv bazel.gpg /etc/apt/trusted.gpg.d/
+          echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+          apt-get update -qq
       - name: Install common dependencies
         run: |
-          sudo apt install -y python3 python3-pip git wget file
-          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1
-          sudo update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
-          sudo apt remove -y python3-babel
-          sudo pip install --use-pep517 --upgrade setuptools babel
+          apt install -y python3 python3-pip git wget file
+          update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+          update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+          apt remove -y python3-babel
+          pip install --use-pep517 --upgrade setuptools babel
           pip install --use-pep517 -r conf/requirements.txt
       - name: Install VeeR dependencies
         run: |
-          sudo apt install -y cpanminus
-          sudo cpanm Bit::Vector JSON
+          apt install -y cpanminus
+          cpanm Bit::Vector JSON
       - name: Install ccache
         if: ${{ !matrix.tool.skip-ccache }}
         run: |
-          sudo apt install -y ccache
+          apt install -y ccache
       - name: Install tool-specific dependencies
         if: ${{ matrix.tool.deps }}
         run: |
-          sudo apt -qq -y install ${{ matrix.tool.deps }}
+          apt -qq -y install ${{ matrix.tool.deps }}
       - name: Setup Rust (if needed)
         if: ${{ matrix.tool.rust_ver }}
         run: |
-          sudo apt -y install curl
+          apt -y install curl
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > setup.sh
           sh setup.sh -y
           source $HOME/.cargo/env
@@ -92,7 +91,7 @@ jobs:
       - name: Update haskell (if needed)
         if: ${{ contains(matrix.tool.deps, 'haskell') }}
         run: |
-          sudo stack upgrade
+          stack upgrade
       - name: Setup recent CMake (if needed)
         if: ${{ matrix.tool.cmake_ver }}
         run: |
@@ -139,7 +138,9 @@ jobs:
           restore-keys: cache_${{ matrix.tool.name }}_
       - name: Install Nix (if needed)
         if: ${{ matrix.tool.nix }}
-        uses: DeterminateSystems/nix-installer-action@v16
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Build
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
