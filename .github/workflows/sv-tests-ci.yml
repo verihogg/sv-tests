@@ -29,6 +29,9 @@ jobs:
     name: ${{ matrix.tool.name }}
     runs-on: self-hosted
     container: ubuntu:jammy-20221130
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Cancel previous
         uses: styfle/cancel-workflow-action@0.13.1
@@ -37,11 +40,14 @@ jobs:
       - name: Show shell
         run: |
           echo "$SHELL"
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: Update apt repos
         run: |
           apt-get update -qq
+      - name: Install git
+        run: |
+          apt-get install -y git
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Setup Node
         run: |
           apt -qq -y install curl
