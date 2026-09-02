@@ -16,9 +16,11 @@ jobs:
           - name: verihogg-lint
             deps:
             nix: true
+            make_jobs_max: 1
           - name: verihogg-format
             deps:
             nix: true
+            make_jobs_max: 1
     env:
       RUNNERS_FILTER: ${{ matrix.tool.runners_filter }}
       CCACHE_DIR: "${{ github.workspace }}/.cache/"
