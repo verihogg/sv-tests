@@ -143,6 +143,10 @@ jobs:
           path: "${{ github.workspace }}/.cache/"
           key: cache_${{ matrix.tool.name }}_${{ steps.cache_timestamp.outputs.time }}
           restore-keys: cache_${{ matrix.tool.name }}_
+      - name: Fix HOME ownership for Nix
+        if: ${{ matrix.tool.nix }}
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /github/home
       - name: Install Nix (if needed)
         if: ${{ matrix.tool.nix }}
         uses: cachix/install-nix-action@v31
@@ -152,7 +156,6 @@ jobs:
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           [[ -f $HOME/.cargo/env ]] && source $HOME/.cargo/env
-          . "/root/.nix-profile/etc/profile.d/nix.sh"
           if [[ "${{ matrix.tool.nix }}" == "true" ]]; then
             tmpdir=$(mktemp -d)
             rsync -a --exclude='.git' third_party/tools/${{ matrix.tool.name }}/ "$tmpdir/"
