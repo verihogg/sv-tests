@@ -42,7 +42,7 @@
 	url = https://github.com/dalance/sv-parser
 [submodule "third_party/cores/scr1"]
 	path = third_party/cores/scr1
-	url = https://github.com/syntacore/scr1
+	url = https://github.com/verihogg/scr1
 [submodule "third_party/tools/verible"]
 	path = third_party/tools/verible
 	url = https://github.com/chipsalliance/verible.git
