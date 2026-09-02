@@ -152,7 +152,7 @@ jobs:
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           [[ -f $HOME/.cargo/env ]] && source $HOME/.cargo/env
-          . "$HOME/.bash_profile"  # GitHub Actions runs bash with --noprofile
+          . "$HOME/.nix-profile/etc/profile.d/nix.sh"
           if [[ "${{ matrix.tool.nix }}" == "true" ]]; then
             tmpdir=$(mktemp -d)
             rsync -a --exclude='.git' third_party/tools/${{ matrix.tool.name }}/ "$tmpdir/"
