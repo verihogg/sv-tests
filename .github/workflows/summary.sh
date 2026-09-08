@@ -6,7 +6,7 @@ set -e
 #environment variables for this file are set in sv-tests-ci.yml
 
 # Get base report from sv-tests master run
-git clone https://github.com/chipsalliance/sv-tests-results.git --depth 120 $REPORTS_HISTORY
+git clone https://github.com/verihogg/sv-tests-results.git --depth 120 $REPORTS_HISTORY
 
 # Delete headers from all report.csv
 for file in $(find ./out/report_* -name "*.csv" -print); do
