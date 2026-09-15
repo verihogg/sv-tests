@@ -203,7 +203,11 @@ jobs:
 
   Summary:
     name: Summary
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
+    container: ubuntu:jammy-20221130
+    defaults:
+      run:
+        shell: bash
     needs: Run
     env:
       ANALYZER: "$PWD/tools/report_analyzer.py"
