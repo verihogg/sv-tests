@@ -212,12 +212,6 @@ jobs:
         shell: bash
     needs: Run
     env:
-      ANALYZER: "$PWD/tools/report_analyzer.py"
-      GRAPHER: "$PWD/tools/history-graph"
-      OUT_REPORT_DIR: "$PWD/out/report/"
-      COMPARE_REPORT: "$OUT_REPORT_DIR/report.csv"
-      CHANGES_SUMMARY_JSON: "$OUT_REPORT_DIR/tests_summary.json"
-      CHANGES_SUMMARY_MD: "$OUT_REPORT_DIR/tests_summary.md"
       TESTS_SUMMARY_DIR: "tests_summary/"
       DEBIAN_FRONTEND: "noninteractive"
     steps:
@@ -243,6 +237,16 @@ jobs:
       - name: Prepare output directories
         run: |
           mkdir -p out/report
+          {
+            echo "ANALYZER=$PWD/tools/report_analyzer.py"
+            echo "GRAPHER=$PWD/tools/history-graph"
+            echo "OUT_REPORT_DIR=$PWD/out/report/"
+            echo "COMPARE_REPORT=$PWD/out/report/report.csv"
+            echo "REPORTS_HISTORY=$(mktemp -d --suffix='.history')"
+            echo "BASE_REPORT=$REPORTS_HISTORY/report.csv"
+            echo "CHANGES_SUMMARY_JSON=$PWD/out/report/tests_summary.json"
+            echo "CHANGES_SUMMARY_MD=$PWD/out/report/tests_summary.md"
+          } >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           path: ./out/
@@ -261,8 +265,6 @@ jobs:
           git submodule update --init --depth 1 third_party/tools/icarus
       - name: Summary
         run: |
-          export REPORTS_HISTORY="$(mktemp -d --suffix='.history')"
-          export BASE_REPORT="$REPORTS_HISTORY/report.csv"
           ./.github/workflows/summary.sh
           ./.github/workflows/report.sh
       - name: Update sv-tests-results repository
