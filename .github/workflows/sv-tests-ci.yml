@@ -223,11 +223,15 @@ jobs:
       TESTS_SUMMARY_DIR: "tests_summary/"
       DEBIAN_FRONTEND: "noninteractive"
     steps:
+      - name: Install git
+        run: |
+          apt-get update -qq
+          apt-get install -y git
+          git config --global --add safe.directory '*'
       - name: Checkout code
         uses: actions/checkout@v7
       - name: Setup python
         run: |
-          apt-get update -qq
           apt install -y python3 python3-pip wget git curl jq
           update-alternatives --install /usr/bin/python python /usr/bin/python3 1
           update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
