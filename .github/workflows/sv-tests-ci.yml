@@ -236,13 +236,14 @@ jobs:
           cpanm Bit::Vector JSON
       - name: Prepare output directories
         run: |
+          REPORTS_HISTORY="$(mktemp -d --suffix='.history')"
           mkdir -p out/report
           {
             echo "ANALYZER=$PWD/tools/report_analyzer.py"
             echo "GRAPHER=$PWD/tools/history-graph"
             echo "OUT_REPORT_DIR=$PWD/out/report/"
             echo "COMPARE_REPORT=$PWD/out/report/report.csv"
-            echo "REPORTS_HISTORY=$(mktemp -d --suffix='.history')"
+            echo "REPORTS_HISTORY=$REPORTS_HISTORY"
             echo "BASE_REPORT=$REPORTS_HISTORY/report.csv"
             echo "CHANGES_SUMMARY_JSON=$PWD/out/report/tests_summary.json"
             echo "CHANGES_SUMMARY_MD=$PWD/out/report/tests_summary.md"
