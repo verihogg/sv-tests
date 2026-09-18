@@ -6,10 +6,10 @@ export CURRENT_PATH=$PWD
 set -ex
 
 git clone \
-  git@github.com:chipsalliance/sv-tests-results.git \
+  git@github.com:verihogg/sv-tests-results.git \
   --single-branch \
   --depth 1 \
-  --branch gh-pages \
+  --branch gh-pages-test \
   output
 
 cd output || (echo "The output directory doesn't exist! Cloning the sv-tests-results repository failed, please check the ssh-key! Exiting"; exit 1)
