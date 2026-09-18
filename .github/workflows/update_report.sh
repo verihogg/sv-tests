@@ -6,7 +6,7 @@ export CURRENT_PATH=$PWD
 set -ex
 
 git clone \
-  git@github.com:chipsalliance/sv-tests-results.git \
+  git@github.com:verihogg/sv-tests-results.git \
   --single-branch \
   --depth 1 \
   --branch gh-pages \
