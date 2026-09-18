@@ -221,10 +221,6 @@ jobs:
       TESTS_SUMMARY_DIR: "tests_summary/"
       DEBIAN_FRONTEND: "noninteractive"
     steps:
-      - name: Initialize env
-        run: |
-          export REPORTS_HISTORY="$(mktemp -d --suffix='.history')"
-          export BASE_REPORT="$REPORTS_HISTORY/report.csv"
       - name: Install git
         run: |
           apt-get update -qq
@@ -265,6 +261,8 @@ jobs:
           git submodule update --init --depth 1 third_party/tools/icarus
       - name: Summary
         run: |
+          export REPORTS_HISTORY="$(mktemp -d --suffix='.history')"
+          export BASE_REPORT="$REPORTS_HISTORY/report.csv"
           ./.github/workflows/summary.sh
           ./.github/workflows/report.sh
       - name: Update sv-tests-results repository
