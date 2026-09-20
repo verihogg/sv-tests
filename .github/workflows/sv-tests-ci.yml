@@ -175,6 +175,11 @@ jobs:
         run: |
           export PATH="${{ github.workspace }}/out/runners/bin:$PATH"
           make info
+      - name: Verify formatter CST comparison
+        if: matrix.tool.name == 'verihogg-format'
+        env:
+          SLANG_DRIVER: ${{ github.workspace }}/out/runners/bin/slang-driver
+        run: python3 -m unittest discover -s tools/tests -v
       - name: Checkout third party tests and cores
         run: |
           git submodule update --init --recursive --depth 1 third_party/tests
@@ -188,6 +193,12 @@ jobs:
           if [[ "${JOBS}x" == "x" ]]; then export JOBS=$(nproc); fi
           for gen in ${STABLE_GENERATORS}; do echo "==GEN stable $gen -j $JOBS" ; make generate-$gen -j${JOBS}; make -j ${JOBS}; done
           for gen in ${UNSTABLE_GENERATORS}; do echo "==GEN unstable $gen" ; make generate-$gen; make; done
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-${{ matrix.tool.name }}
+          path: out/report/
+          if-no-files-found: error
       - name: Prepare Report
         run:
           mv out/report/report.csv out/report/${{ matrix.tool.name }}_report.csv

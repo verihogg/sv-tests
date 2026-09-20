@@ -17,6 +17,7 @@ import signal
 import subprocess
 
 from BaseRunner import BaseRunner
+from cst_normalizer import normalize_cst
 
 
 def kill_child_processes(parent_pid, sig=signal.SIGKILL):
@@ -28,22 +29,6 @@ def kill_child_processes(parent_pid, sig=signal.SIGKILL):
     children = parent.children(recursive=True)
     for process in children:
         process.send_signal(sig)
-
-
-LOCATION_KEYS = {"start", "end", "location", "line", "column", "offset"}
-TRIVIA_KEYS = {"trivia"}
-
-
-def _strip_locations(obj):
-    if isinstance(obj, dict):
-        return {
-            k: _strip_locations(v)
-            for k, v in obj.items()
-            if k not in LOCATION_KEYS and k not in TRIVIA_KEYS
-        }
-    if isinstance(obj, list):
-        return [_strip_locations(item) for item in obj]
-    return obj
 
 
 class VerihoggFormat(BaseRunner):
@@ -72,71 +57,84 @@ class VerihoggFormat(BaseRunner):
 
         originals_dir = os.path.join(tmp_dir, "originals")
         formatted_dir = os.path.join(tmp_dir, "formatted")
-        os.makedirs(originals_dir)
-        os.makedirs(formatted_dir)
+        comparison_dir = os.path.join(tmp_dir, "comparison")
+        for directory in (originals_dir, formatted_dir, comparison_dir):
+            os.makedirs(directory)
 
-        file_pairs = []
-        for f in params['files']:
-            basename = os.path.basename(f)
-            orig_path = os.path.join(originals_dir, basename)
-            fmt_path = os.path.join(formatted_dir, basename)
-            shutil.copy2(f, orig_path)
-            shutil.copy2(f, fmt_path)
-            file_pairs.append((orig_path, fmt_path))
+        source_files = [os.path.abspath(f) for f in params['files']]
+        source_dirs = list(
+            dict.fromkeys(os.path.dirname(f) for f in source_files))
+        source_root = os.path.commonpath(source_dirs)
+        relative_files = [
+            os.path.relpath(f, source_root) for f in source_files
+        ]
+        for source, relative in zip(source_files, relative_files):
+            for directory in (originals_dir, formatted_dir):
+                target = os.path.join(directory, relative)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                shutil.copy2(source, target)
+
+        def include_args(directory):
+            # Prefer staged copies of supplied headers; use original directories
+            # for headers outside the test's input files.
+            originals = list(
+                dict.fromkeys(
+                    [os.path.abspath(d) for d in params['incdirs']] +
+                    source_dirs))
+            staged = [
+                os.path.join(directory, os.path.relpath(d, source_root))
+                for d in originals
+                if os.path.commonpath([source_root, d]) == source_root
+            ]
+            return [f"-I{d}" for d in staged + originals]
 
         fmt_cmd = [self.executable, "--inplace"]
-        fmt_cmd += [f"-I{d}" for d in params['incdirs']]
+        fmt_cmd += include_args(formatted_dir)
         fmt_cmd += [f"-D{d}" for d in params['defines']]
-        fmt_cmd += [fmt for _, fmt in file_pairs]
+        fmt_cmd += [os.path.join(formatted_dir, f) for f in relative_files]
         fmt_log, fmt_rc = self._run(fmt_cmd, tmp_dir, timeout)
         invocation = " ".join(fmt_cmd) + "\n"
 
         if fmt_rc != 0:
             return (invocation + fmt_log, fmt_rc) + self._profile()
 
-        for orig, fmt in file_pairs:
-            orig_json = os.path.join(tmp_dir, "orig_cst.json")
-            fmt_json = os.path.join(tmp_dir, "fmt_cst.json")
-
-            slang_base = [
-                "slang-driver", "--parse-only", "--single-unit",
-                "--timescale=1ns/1ns"
-            ]
-            slang_base += [f"-I{d}" for d in params['incdirs']]
-            slang_base += [f"-D{d}" for d in params['defines']]
-
-            orig_cmd = slang_base + ["--cst-json", orig_json, orig]
-            orig_log, orig_rc = self._run(orig_cmd, tmp_dir, timeout)
-            if orig_rc != 0:
-                return (
-                    invocation + f"slang-driver (original) {orig}\n" +
-                    orig_log, 1) + self._profile()
-
-            fmt_cmd_slang = slang_base + ["--cst-json", fmt_json, fmt]
-            fmt_slang_log, fmt_slang_rc = self._run(
-                fmt_cmd_slang, tmp_dir, timeout)
-            if fmt_slang_rc != 0:
-                return (
-                    invocation + f"slang-driver (formatted) {fmt}\n" +
-                    fmt_slang_log, 1) + self._profile()
-
-            try:
-                with open(orig_json) as jf:
-                    orig_cst = json.load(jf)
-                with open(fmt_json) as jf:
-                    fmt_cst = json.load(jf)
-            except (json.JSONDecodeError, OSError) as e:
-                return (invocation + f"Failed to load CST JSON: {e}\n",
+        slang_base = [
+            "slang-driver", "--parse-only", "--single-unit",
+            "--timescale=1ns/1ns"
+        ]
+        slang_base += include_args(comparison_dir)
+        slang_base += [f"-D{d}" for d in params['defines']]
+        original_csts = {}
+        for label, directory in (("original", originals_dir), ("formatted",
+                                                               formatted_dir)):
+            # Both parses must see the same filenames for __FILE__. Stage all
+            # inputs together so includes also see the right version of headers.
+            for relative in relative_files:
+                target = os.path.join(comparison_dir, relative)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                shutil.copy2(os.path.join(directory, relative), target)
+            for relative in relative_files:
+                source = os.path.join(comparison_dir, relative)
+                json_path = os.path.join(tmp_dir, "cst.json")
+                cmd = slang_base + ["--cst-json", json_path, source]
+                log, rc = self._run(cmd, tmp_dir, timeout)
+                if rc != 0:
+                    return (
+                        invocation + f"slang-driver ({label}) {source}\n" +
+                        log, 1) + self._profile()
+                try:
+                    with open(json_path) as jf:
+                        cst = normalize_cst(json.load(jf))
+                except (ValueError, OSError) as e:
+                    return (invocation + f"Cannot compare CST JSON: {e}\n",
+                            1) + self._profile()
+                if label == "original":
+                    original_csts[relative] = cst
+                elif original_csts[relative] != cst:
+                    return (
+                        invocation +
+                        f"CST mismatch between original and formatted: {relative}\n",
                         1) + self._profile()
-
-            orig_cst_stripped = _strip_locations(orig_cst)
-            fmt_cst_stripped = _strip_locations(fmt_cst)
-
-            if orig_cst_stripped != fmt_cst_stripped:
-                return (
-                    invocation +
-                    f"CST mismatch between original and formatted: {orig}\n",
-                    1) + self._profile()
 
         return (invocation + "CST verification passed\n", 0) + self._profile()
 

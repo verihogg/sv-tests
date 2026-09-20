@@ -147,6 +147,7 @@ info:
 PY_FILES := $(shell file generators/* tools/* | sed -ne 's/:.*[Pp]ython.*//p')
 PY_FILES += $(wildcard tools/*.py)
 PY_FILES += $(wildcard tools/runners/*.py)
+PY_FILES += $(wildcard tools/tests/*.py)
 PY_FILES += $(wildcard conf/report/*.py)
 
 format:
