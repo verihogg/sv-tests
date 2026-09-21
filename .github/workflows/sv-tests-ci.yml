@@ -158,28 +158,30 @@ jobs:
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           [[ -f $HOME/.cargo/env ]] && source $HOME/.cargo/env
+          runners_bin="$GITHUB_WORKSPACE/out/runners/bin"
           if [[ "${{ matrix.tool.nix }}" == "true" ]]; then
             tmpdir=$(mktemp -d)
             rsync -a --exclude='.git' third_party/tools/${{ matrix.tool.name }}/ "$tmpdir/"
             cd "$tmpdir"
             nix build .#${{ matrix.tool.name }}
-            mkdir -p ${{ github.workspace }}/out/runners/bin
-            cp result/bin/* ${{ github.workspace }}/out/runners/bin/
+            mkdir -p "$runners_bin"
+            cp result/bin/* "$runners_bin/"
             slang_store=$(nix build --no-link --print-out-paths nixpkgs#sv-lang)
-            cp "${slang_store}/bin/slang" ${{ github.workspace }}/out/runners/bin/slang-driver
-            echo "${{ github.workspace }}/out/runners/bin" >> $GITHUB_PATH
+            cp "${slang_store}/bin/slang" "$runners_bin/slang-driver"
+            echo "$runners_bin" >> "$GITHUB_PATH"
           else
             make ${{ matrix.tool.name }} -j$(nproc)
           fi
       - name: Check
         run: |
-          export PATH="${{ github.workspace }}/out/runners/bin:$PATH"
+          export PATH="$GITHUB_WORKSPACE/out/runners/bin:$PATH"
           make info
       - name: Verify formatter CST comparison
         if: matrix.tool.name == 'verihogg-format'
-        env:
-          SLANG_DRIVER: ${{ github.workspace }}/out/runners/bin/slang-driver
-        run: python3 -m unittest discover -s tools/tests -v
+        run: |
+          export SLANG_DRIVER="$GITHUB_WORKSPACE/out/runners/bin/slang-driver"
+          "$SLANG_DRIVER" --version
+          python3 -m unittest discover -s tools/tests -v
       - name: Checkout third party tests and cores
         run: |
           git submodule update --init --recursive --depth 1 third_party/tests
