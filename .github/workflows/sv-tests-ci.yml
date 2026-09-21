@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      formatter_only:
+        description: 'Run only verihogg-format and upload its HTML report'
+        type: boolean
+        default: false
   schedule:
     - cron: '0 1 * * *' # run daily at 01:00 am (UTC)
 
@@ -12,15 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tool:
-          - name: verihogg-lint
-            deps:
-            nix: true
-            make_jobs_max: 1
-          - name: verihogg-format
-            deps:
-            nix: true
-            make_jobs_max: 1
+        tool: >-
+          ${{ fromJSON(
+            github.event_name == 'workflow_dispatch' && inputs.formatter_only
+            && '[{"name":"verihogg-format","nix":true,"make_jobs_max":1,"runners_filter":"VerihoggFormat"}]'
+            || '[{"name":"verihogg-lint","nix":true,"make_jobs_max":1},{"name":"verihogg-format","nix":true,"make_jobs_max":1}]'
+          ) }}
     env:
       RUNNERS_FILTER: ${{ matrix.tool.runners_filter }}
       CCACHE_DIR: "${{ github.workspace }}/.cache/"
@@ -216,6 +218,8 @@ jobs:
 
   Summary:
     name: Summary
+    # The formatter-only run already uploads its HTML report in the Run job.
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.formatter_only) }}
     runs-on: self-hosted
     container: ubuntu:jammy-20221130
     defaults:
