@@ -36,4 +36,4 @@ class VerihoggLintLax(BaseRunner):
         self.cmd += params['files']
 
     def is_success_returncode(self, rc, params):
-        return rc <= 1
+        return rc == 0 or rc == 2
