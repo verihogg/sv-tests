@@ -11,6 +11,7 @@
 
 import json
 import os
+import re
 import resource
 import shutil
 import signal
@@ -46,6 +47,7 @@ class VerihoggFormat(BaseRunner):
         self.cmd = [self.executable] + params['files']
 
     def run(self, tmp_dir, params):
+        self.warning_count = 0
         timeout = int(params['timeout'])
         if 'DISABLE_TEST_TIMEOUTS' in os.environ:
             timeout = None
@@ -98,6 +100,9 @@ class VerihoggFormat(BaseRunner):
         if fmt_rc != 0:
             return (invocation + fmt_log, fmt_rc) + self._profile()
 
+        warning_count = len(re.findall(r"^Warning(?: in\b|:)", fmt_log,
+                                       re.MULTILINE))
+
         slang_base = [
             "slang-driver", "--parse-only", "--single-unit",
             "--timescale=1ns/1ns"
@@ -105,6 +110,12 @@ class VerihoggFormat(BaseRunner):
         slang_base += include_args(comparison_dir)
         slang_base += [f"-D{d}" for d in params['defines']]
         original_csts = {}
+        # Some BaseJump sources use macros from bsg_defines.sv without a local
+        # `include. Each CST check parses one source, so pass the definitions
+        # first in the same compilation unit for both versions.
+        macro_prelude = next((relative for relative in relative_files
+                              if os.path.basename(relative) == "bsg_defines.sv"),
+                             None)
         for label, directory in (("original", originals_dir), ("formatted",
                                                                formatted_dir)):
             # Both parses must see the same filenames for __FILE__. Stage all
@@ -116,7 +127,10 @@ class VerihoggFormat(BaseRunner):
             for relative in relative_files:
                 source = os.path.join(comparison_dir, relative)
                 json_path = os.path.join(tmp_dir, "cst.json")
-                cmd = slang_base + ["--cst-json", json_path, source]
+                prelude = ([os.path.join(comparison_dir, macro_prelude)]
+                           if macro_prelude and relative != macro_prelude
+                           else [])
+                cmd = slang_base + ["--cst-json", json_path] + prelude + [source]
                 log, rc = self._run(cmd, tmp_dir, timeout)
                 if rc != 0:
                     return (
@@ -136,7 +150,9 @@ class VerihoggFormat(BaseRunner):
                         f"CST mismatch between original and formatted: {relative}\n",
                         1) + self._profile()
 
-        return (invocation + "CST verification passed\n", 0) + self._profile()
+        self.warning_count = warning_count
+        return (invocation + fmt_log + "CST verification passed\n",
+                0) + self._profile()
 
     def _run(self, cmd, cwd, timeout):
         proc = subprocess.Popen(

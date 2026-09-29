@@ -12,8 +12,9 @@
 
 This is a structural regression check, not a proof of semantic equivalence.
 Retain directives and inactive code, including macro whitespace that can become
-string data. Unknown macro callees are treated conservatively. Never discard
-fields by names such as 'end': they can contain real tokens and trivia.
+string data. Ignore case changes in numeric syntax while keeping macro text
+exact. Unknown macro callees are treated conservatively. Never discard fields
+by names such as 'end': they can contain real tokens and trivia.
 """
 
 import re
@@ -26,6 +27,10 @@ OPEN_KINDS = {
     "OpenParenthesis", "OpenBracket", "OpenBrace", "ApostropheOpenBrace"
 }
 CLOSE_KINDS = {"CloseParenthesis", "CloseBracket", "CloseBrace"}
+NUMERIC_CASE_KINDS = {"IntegerBase", "IntegerLiteral", "UnbasedUnsizedLiteral"}
+NUMERIC_EXPONENT_KINDS = {"RealLiteral", "TimeLiteral"}
+ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                            "abcdefghijklmnopqrstuvwxyz")
 # These comments can control downstream tools. Keep their contents exactly.
 # Custom comment dialects must be added here; ordinary prose is ignored.
 TOOL_COMMENT = re.compile(
@@ -34,10 +39,18 @@ TOOL_COMMENT = re.compile(
     r"translate_on)\b", re.IGNORECASE)
 
 
+def _normalized_numeric_text(kind, value):
+    if kind in NUMERIC_CASE_KINDS:
+        return value.translate(ASCII_LOWER)
+    if kind in NUMERIC_EXPONENT_KINDS:
+        return re.sub(r"(?<=.)E(?=[+-]?[0-9])", "e", value)
+    return value
+
+
 def _ordinary_comment(text):
     if text.startswith("//") and "\n" not in text and "\r" not in text:
         content = text[2:]
-    elif text.startswith("/*") and text.find("*/") == len(text) - 2:
+    elif text.startswith("/*") and text.find("*/", 2) == len(text) - 2:
         content = text[2:-2]
     else:
         return False
@@ -170,7 +183,7 @@ class _Normalizer:
     def is_sensitive(self, name):
         return name not in self.known or name in self.sensitive
 
-    def trivia(self, items, keep_whitespace=False):
+    def trivia(self, items, keep_whitespace=False, normalize_numeric=True):
         if not isinstance(items, list):
             raise ValueError("CST comparison requires full, structured trivia")
         result = []
@@ -194,7 +207,8 @@ class _Normalizer:
             if kind in {"LineComment", "BlockComment", "DisabledText"}:
                 if isinstance(text, str) and _ordinary_comment(text):
                     continue
-            result.append(self.normalize(item))
+            result.append(self.normalize(
+                item, normalize_numeric=normalize_numeric))
         return result
 
     def tokens(
@@ -203,7 +217,8 @@ class _Normalizer:
             macro_body=False,
             keep_whitespace=False,
             formals=False,
-            default_sensitive=False):
+            default_sensitive=False,
+            normalize_numeric=True):
         result = []
         pending_trivia = []
         quote = None
@@ -235,8 +250,22 @@ class _Normalizer:
                     key: value
                     for key, value in token.items()
                     if key != "trivia"
-                })
-            normalized_trivia = self.trivia(pending_trivia + trivia, preserve)
+                }, normalize_numeric=(normalize_numeric and quote is None
+                                       and not any(calls)))
+            # Slang lexes inactive based digits as Identifier tokens. Case in
+            # such digits is still insignificant, provided they directly
+            # follow the base token outside a macro argument.
+            if (normalize_numeric and not any(calls) and quote is None
+                    and kind == "Identifier" and not trivia
+                    and previous.get("kind") == "IntegerBase"):
+                base = previous.get("text", "")[-1:].lower()
+                digits = {"b": r"[01xXzZ?_]+", "o": r"[0-7xXzZ?_]+",
+                          "d": r"[0-9xXzZ?_]+",
+                          "h": r"[0-9a-fA-FxXzZ?_]+"}.get(base)
+                if digits and re.fullmatch(digits, token.get("text", "")):
+                    normalized["text"] = token["text"].lower()
+            normalized_trivia = self.trivia(
+                pending_trivia + trivia, preserve, normalize_numeric)
             if normalized_trivia:
                 normalized["trivia"] = normalized_trivia
             pending_trivia = []
@@ -264,9 +293,12 @@ class _Normalizer:
             previous = token
         return result
 
-    def normalize(self, obj, default_sensitive=False):
+    def normalize(self, obj, default_sensitive=False, normalize_numeric=True):
         if isinstance(obj, list):
-            return [self.normalize(item, default_sensitive) for item in obj]
+            return [
+                self.normalize(item, default_sensitive, normalize_numeric)
+                for item in obj
+            ]
         if not isinstance(obj, dict):
             return obj
         kind = obj.get("kind")
@@ -278,25 +310,32 @@ class _Normalizer:
         result = {}
         for key, value in obj.items():
             if key == "trivia":
-                value = self.trivia(value)
+                value = self.trivia(value,
+                                    normalize_numeric=normalize_numeric)
                 if not value:
                     continue
             elif key == "body" and kind in {"DefineDirective",
                                             "$InactiveDefine"}:
-                value = self.tokens(value, macro_body=True)
+                value = self.tokens(value, macro_body=True,
+                                    normalize_numeric=False)
             elif key == "disabledTokens":
-                value = self.tokens(value)
+                value = self.tokens(value, normalize_numeric=True)
             elif key == "formals" and kind == "$InactiveDefine":
                 value = self.tokens(
-                    value, formals=True, default_sensitive=default_sensitive)
+                    value, formals=True, default_sensitive=default_sensitive,
+                    normalize_numeric=False)
             elif key == "tokens" and kind in {"MacroActualArgument",
                                               "MacroArgumentDefault"}:
                 value = self.tokens(
                     value,
                     keep_whitespace=(
-                        kind == "MacroArgumentDefault" and default_sensitive))
+                        kind == "MacroArgumentDefault" and default_sensitive),
+                    normalize_numeric=False)
             else:
-                value = self.normalize(value, default_sensitive)
+                value = self.normalize(value, default_sensitive,
+                                       normalize_numeric)
+            if key == "text" and normalize_numeric and isinstance(value, str):
+                value = _normalized_numeric_text(kind, value)
             if key == "endOfFile" and value == EMPTY_EOF_TOKEN:
                 continue
             result[key] = value

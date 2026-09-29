@@ -9,6 +9,9 @@
   --black: #2C2C2E;
   --red: #ED5545;
   --green: #63C366;
+  --yellow: #F0C94A;
+  --blue: #72B9E8;
+  --unverified: #B9BBC5;
   --accent: #1226AA;
   /* Padding */
   --gap-l:30px;
@@ -28,6 +31,9 @@ section {
 }
 
 section.property-list.test-passed { background-color: #D7ECD4; }
+section.property-list.test-warning { background-color: #FFF1BD; }
+section.property-list.test-negative-pass { background-color: #DCEFFB; }
+section.property-list.test-unverified { background-color: #ECEDEF; }
 section.property-list.test-failed { background-color: #F5CFCA; }
 
 section.property-list a:link {
@@ -43,8 +49,29 @@ section.property-list > dl > div {
   line-height: 1.2em;
 }
 
+header.test-warning,
 header.test-passed {
   background-color: var(--green);
+  position: sticky;
+  left: 0;
+  top: 0;
+  width: calc(100vw - 15px);
+}
+
+header.test-warning {
+  background-color: var(--yellow);
+}
+
+header.test-negative-pass {
+  background-color: var(--blue);
+  position: sticky;
+  left: 0;
+  top: 0;
+  width: calc(100vw - 15px);
+}
+
+header.test-unverified {
+  background-color: var(--unverified);
   position: sticky;
   left: 0;
   top: 0;

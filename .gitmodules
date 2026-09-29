@@ -111,4 +111,4 @@
 	url = https://github.com/verihogg/verihogg-lint
 [submodule "third_party/tools/verihogg-format"]
 	path = third_party/tools/verihogg-format
-	url = https://github.com/verihogg/verihogg-format
+	url = https://github.com/g4rry1/verihogg-format.git

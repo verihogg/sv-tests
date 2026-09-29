@@ -62,6 +62,7 @@ _csv_header = [
     'Group',
     'Pass',  # result. True if we got expected result.
     'ExitCode',  # Actual tool exit code
+    'Status',  # Detailed result, including formatter-negative passes
     'Tags',
     'InputBytes',  # test facts
     'AllowedTimeout',  # Some measurements
@@ -271,6 +272,9 @@ def readConfig(filename):
 class TestStatus(enum.Enum):
     NA = "test-na"
     PASSED = "test-passed"
+    WARNING = "test-warning"
+    NEGATIVE_PASS = "test-negative-pass"
+    UNVERIFIED = "test-unverified"
     FAILED = "test-failed"
     VARIED = "test-varied"
 
@@ -327,6 +331,9 @@ class TagToolResult:
     types: Set[str] = dataclasses.field(default_factory=set)
 
     passed_tests: int = 0
+    warning_tests: int = 0
+    negative_pass_tests: int = 0
+    unverified_tests: int = 0
 
     @property
     def total_tests(self):
@@ -339,6 +346,12 @@ class TagToolResult:
         elif (self.passed_tests == 0):
             return TestStatus.FAILED
         elif (self.passed_tests == self.total_tests):
+            if self.warning_tests:
+                return TestStatus.WARNING
+            if self.negative_pass_tests:
+                return TestStatus.NEGATIVE_PASS
+            if self.unverified_tests:
+                return TestStatus.UNVERIFIED
             return TestStatus.PASSED
         return TestStatus.VARIED
 
@@ -502,10 +515,18 @@ def renderTagResultsConfig(
     config = []
     for test_result in test_results:
         name = test_result.name
-        status = int(test_result.status == TestStatus.PASSED)
+        status = {TestStatus.FAILED: 0, TestStatus.PASSED: 1,
+                  TestStatus.WARNING: 2, TestStatus.NEGATIVE_PASS: 3,
+                  TestStatus.UNVERIFIED: 4}.get(
+                      test_result.status, 0)
         log_html_file = test_result.log_html_file
-        first_input_html = test_result.input_files[0] + ".html"
-        first_input_html = urllib.parse.quote(first_input_html)
+        # Generated wrapper files can contain only test metadata. Show the
+        # first actual source file in the details panel when one is available.
+        default_input = next(
+            (path for path in test_result.input_files
+             if not path.startswith("tests/generated/")),
+            test_result.input_files[0])
+        first_input_html = urllib.parse.quote(default_input + ".html")
         group = test_result.results_group
         config.append([group, name, status, log_html_file, first_input_html])
 
@@ -554,6 +575,7 @@ def collect_logs(runner_name: str):
             "should_fail_because", "defines", "compatible-runners",
             "unsynthesizable", "results_group", "simvariants"
         }
+        optional_parameters = {"warning_count"}
         test_log_data: Dict[str, Any] = {}
         log_content = ""
 
@@ -570,7 +592,8 @@ def collect_logs(runner_name: str):
                     param = attr.group(1).lower()
                     value = attr.group(2).strip()
 
-                    if param not in remaining_parameters:
+                    if (param not in remaining_parameters
+                            and param not in optional_parameters):
                         _logger.warning(
                             "Skipping unknown parameter: {} in {}".format(
                                 param, log_file))
@@ -583,7 +606,7 @@ def collect_logs(runner_name: str):
 
                     test_log_data[param] = value
 
-                    remaining_parameters.remove(param)
+                    remaining_parameters.discard(param)
                     if len(remaining_parameters) == 0:
                         # found all tags
                         break
@@ -622,7 +645,20 @@ def collect_logs(runner_name: str):
         tool_should_fail = test_log_data["should_fail"] == "1"
         tool_crashed = test_result.exit_code >= 126
         tool_failed = test_log_data["tool_success"] == "0"
-        if tool_crashed or tool_should_fail != tool_failed:
+        # For a formatter, success means the original and formatted CSTs
+        # matched. An intentionally invalid test can still satisfy that check.
+        if (runner_name == "VerihoggFormat" and tool_should_fail
+                and tool_failed and "slang-driver (original)" in log_content):
+            test_result.status = TestStatus.UNVERIFIED
+        elif (runner_name == "VerihoggFormat" and tool_should_fail
+                and not tool_failed and not tool_crashed):
+            if int(test_log_data.get("warning_count", 0)) > 0:
+                test_result.status = TestStatus.WARNING
+            else:
+                test_result.status = TestStatus.NEGATIVE_PASS
+        elif int(test_log_data.get("warning_count", 0)) > 0:
+            test_result.status = TestStatus.WARNING
+        elif tool_crashed or tool_should_fail != tool_failed:
             test_result.status = TestStatus.FAILED
         elif (test_log_data["mode"] == "simulation"
               and not parseLog(log_content)):
@@ -663,12 +699,22 @@ def collect_logs(runner_name: str):
             tag_data = group.tags.setdefault(tag, TagToolResult())
             tag_data.tests.append(test_result)
             tag_data.types.update(test_result.types)
-            if test_result.status == TestStatus.PASSED:
+            if test_result.status in (TestStatus.PASSED, TestStatus.WARNING,
+                                      TestStatus.NEGATIVE_PASS,
+                                      TestStatus.UNVERIFIED):
                 tag_data.passed_tests += 1
+            if test_result.status == TestStatus.WARNING:
+                tag_data.warning_tests += 1
+            if test_result.status == TestStatus.NEGATIVE_PASS:
+                tag_data.negative_pass_tests += 1
+            if test_result.status == TestStatus.UNVERIFIED:
+                tag_data.unverified_tests += 1
 
         # Summary
 
-        if test_result.status == TestStatus.PASSED:
+        if test_result.status in (TestStatus.PASSED, TestStatus.WARNING,
+                                      TestStatus.NEGATIVE_PASS,
+                                      TestStatus.UNVERIFIED):
             input_files_size = test_result.total_input_files_size
             if input_files_size > _minimum_throughput_file_size:
                 local_group.passed_tests_input_files_size += input_files_size
@@ -685,7 +731,9 @@ def collect_logs(runner_name: str):
             summary.max_ram_usage = ram_usage_mb
 
         summary.total_tests += 1
-        if test_result.status == TestStatus.PASSED:
+        if test_result.status in (TestStatus.PASSED, TestStatus.WARNING,
+                                      TestStatus.NEGATIVE_PASS,
+                                      TestStatus.UNVERIFIED):
             summary.total_passed_tests += 1
 
         if tool_info.name == "":
@@ -703,7 +751,10 @@ def collect_logs(runner_name: str):
         for tag_id, tag_tool_result in group.tags.items():
             if tag_tool_result.status != TestStatus.NA:
                 group.summary.total_tested_tags += 1
-                if tag_tool_result.status == TestStatus.PASSED:
+                if tag_tool_result.status in (TestStatus.PASSED,
+                                              TestStatus.WARNING,
+                                              TestStatus.NEGATIVE_PASS,
+                                      TestStatus.UNVERIFIED):
                     group.summary.total_passed_tags += 1
 
             tag_tool_result.tests.sort(key=lambda t: numericSortKey(t.name))
@@ -866,7 +917,10 @@ def main():
         meta_tags,
     ]
     results = None
-    with multiprocessing.Pool(initializer=init_globals,
+    report_jobs = max(1, min(multiprocessing.cpu_count(),
+                             int(os.environ.get("REPORT_JOBS", "4"))))
+    with multiprocessing.Pool(processes=report_jobs,
+                              initializer=init_globals,
                               initargs=process_initargs) as pool:
         results = pool.map(collect_logs, runner_names)
 
@@ -907,7 +961,11 @@ def main():
                     "TestName": test_result.name,
                     "Tool": tool_name,
                     "Group": test_result.results_group,
-                    "Pass": test_result.status == TestStatus.PASSED,
+                    "Pass": test_result.status in (TestStatus.PASSED,
+                                                   TestStatus.WARNING,
+                                                   TestStatus.NEGATIVE_PASS,
+                                                   TestStatus.UNVERIFIED),
+                    "Status": test_result.status.value,
                     "ExitCode": test_result.exit_code,
                     "Tags": " ".join(test_result.tags),
                     "InputBytes": test_result.total_input_files_size,
@@ -918,15 +976,15 @@ def main():
                     "RamUsageMiB": round(test_result.ram_usage / 1024, 3),
                 }
 
-    ncpu = multiprocessing.cpu_count()
-    batch_size = int(len(all_input_files) / ncpu) + 1
+    batch_size = int(len(all_input_files) / report_jobs) + 1
     file_batches = []
     for i in range(0, len(all_input_files), batch_size):
         file_batches.append(list(all_input_files)[i:i + batch_size])
 
     # Render input files
     rendered_count = 0
-    with multiprocessing.Pool(initializer=init_globals,
+    with multiprocessing.Pool(processes=report_jobs,
+                              initializer=init_globals,
                               initargs=process_initargs) as pool:
         rendered_count = sum(pool.map(render_batch, file_batches))
 

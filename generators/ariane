@@ -12,7 +12,7 @@
 import sys
 import os
 import re
-from make_var import *
+import subprocess
 
 templ = """/*
 :name: {name}
@@ -129,18 +129,18 @@ def process_filelist(flist_path, target_cfg, incdirs, defines, sources):
 def get_verilate_command_sources():
     """Use make -pn to get the expanded verilate_command, then extract
     sources, incdirs, defines, and top_module from it."""
-    main_path = os.path.abspath(os.getcwd())
-    os.chdir(ariane_path)
-    os.environ['RISCV'] = "./"
-
-    M = make_vars(origin=['makefile'])
-    os.chdir(main_path)
-
-    try:
-        ver_cmd = M['makefile']['verilate_command']
-    except KeyError:
+    env = os.environ.copy()
+    env['RISCV'] = './'
+    result = subprocess.run(
+        ['make', '-pn', '--no-print-directory'], cwd=ariane_path,
+        env=env, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, timeout=30)
+    match = re.search(r'^verilate_command\s*:=\s*(.*)$', result.stdout,
+                      re.MULTILINE)
+    if not match:
         print("Warning: verilate_command not found in Makefile")
         return [], set(), set(), 'ariane_testharness'
+    ver_cmd = match.group(1)
 
     incdirs = set()
     defines = set()

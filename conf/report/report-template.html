@@ -84,6 +84,19 @@
                </dl>
             </details>
          </section>
+         <div class="status-legend" aria-label="Result color legend">
+            <strong>Result colors</strong>
+            <ul>
+               <li><span class="status-swatch test-passed" aria-hidden="true"></span><b>Green:</b> CST matched.</li>
+               <li><span class="status-swatch test-warning" aria-hidden="true"></span><b>Yellow:</b> CST matched; formatter issued warnings.</li>
+               <li><span class="status-swatch test-negative-pass" aria-hidden="true"></span><b>Blue:</b> intentionally invalid input; CST matched.</li>
+               <li><span class="status-swatch test-unverified" aria-hidden="true"></span><b>Gray:</b> Slang rejected the original; CST was not compared.</li>
+               <li><span class="status-swatch test-failed" aria-hidden="true"></span><b>Red:</b> verification failed.</li>
+               <li><span class="status-swatch status-swatch-varied" aria-hidden="true"></span><b>Green/red:</b> mixed results in a category.</li>
+            </ul>
+            <p><span class="negative-pass-example">1</span> and <span class="unverified-example">1</span>
+               show the number of blue and gray tests within a category.</p>
+         </div>
          {% for group, group_data in report.groups|numeric_dictsort %}
          <table id="report_table-{{group}}" class="dataTable" data-group="{{group}}">
             <thead>
@@ -127,6 +140,12 @@
                   {%     if test_status != 'test-na' %}
                   {%       set _ = attrs.append('class=' ~ (test_status|quote)) %}
                   {%       set _ = attrs.append('data-tool=' ~ (tool|lower|escape_attr|quote)) %}
+                  {%       if tool_data.negative_pass_tests %}
+                  {%         set _ = attrs.append('data-negative-passes=' ~ (tool_data.negative_pass_tests|quote)) %}
+                  {%       endif %}
+                  {%       if tool_data.unverified_tests %}
+                  {%         set _ = attrs.append('data-unverified=' ~ (tool_data.unverified_tests|quote)) %}
+                  {%       endif %}
                   {%       if test_status == 'test-varied' %}
                   {%         set percentage = '%0.0f'|format(100.0 * tool_data.passed_tests / tool_data.total_tests) %}
                   {%         set _ = attrs.append('style="--val: '~(percentage)~'%"') %}

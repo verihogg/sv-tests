@@ -111,3 +111,32 @@ Finally the file containing the test case and metadata should be placed in `test
 * [verible](https://github.com/google/verible)
 * [circt-verilog](https://github.com/llvm/circt)
 * [yosys-slang](https://github.com/povik/yosys-slang)
+
+## Local verihogg-format report
+
+To reproduce the full formatter report, first install the Python dependencies
+from `conf/requirements.txt` as described above. Then initialize the test
+sources and generate wrappers once in this checkout:
+
+```bash
+git submodule update --init --recursive third_party/tests third_party/cores third_party/tools/icarus third_party/tools/yosys
+for gen in $(make list-generators); do
+  [ "$gen" = fusesoc ] || make "generate-$gen"
+done
+```
+
+The FuseSoC configurations exclude `VerihoggFormat`, so that generator does not
+contribute tests to this report. Generated wrappers are kept in `tests/generated`.
+
+Run the report against a local formatter source checkout, including its
+uncommitted changes:
+
+```bash
+tools/local-verihogg-format-report /path/to/verihogg-format /path/to/slang-driver
+```
+
+The formatter checkout must already have a configured CMake `build` directory.
+The script rebuilds its binary, reruns all available `.sv` tests even if old
+logs exist, and writes `out/report/index.html`. Omit the second argument when
+`slang-driver` is on `PATH`. The driver must support `--cst-json` with directive
+syntax in its JSON output. Set `JOBS` to change the parallel job count.

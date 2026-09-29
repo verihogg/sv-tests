@@ -336,7 +336,13 @@ class TestDetailsPanel {
       this._test_name_to_id.set(name, test_id)
 
       const item = this._item_template.content.firstElementChild.cloneNode(true)
-      if (status)
+      if (status === 4)
+        item.classList.add("s_unverified")
+      else if (status === 3)
+        item.classList.add("s_negative_pass")
+      else if (status === 2)
+        item.classList.add("s_warning")
+      else if (status === 1)
         item.classList.add("s_passed")
       item.querySelector("slot[name='test-name']").replaceWith(name)
       item._test_id = test_id

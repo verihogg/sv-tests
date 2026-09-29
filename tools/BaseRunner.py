@@ -55,6 +55,7 @@ class BaseRunner:
         self.executable = executable
         self.supported_features = supported_features
         self.allowed_extensions = ['.v', '.sv', '.vh', '.svh']
+        self.warning_count = 0
 
         self.url = "https://github.com/symbiflow/sv-tests"
         self.submodule = ""

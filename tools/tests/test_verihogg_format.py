@@ -32,6 +32,13 @@ from runners.VerihoggFormat import VerihoggFormat
 
 
 class NormalizeCSTTests(unittest.TestCase):
+    def test_block_comment_starting_with_slashes_is_layout_only(self):
+        original = {"kind": "Identifier", "text": "x", "trivia": [{
+            "kind": "BlockComment", "text": "/*// old code\n  value; */"}]}
+        formatted = {"kind": "Identifier", "text": "x", "trivia": [{
+            "kind": "BlockComment", "text": "/*// old code\n    value; */"}]}
+        self.assertEqual(_normalize_cst(original), _normalize_cst(formatted))
+
     def test_whitespace_does_not_change_comparison(self):
         original = {"kind": "Identifier", "text": "m"}
         formatted = {
@@ -52,6 +59,57 @@ class NormalizeCSTTests(unittest.TestCase):
             ],
         }
         self.assertEqual(_normalize_cst(original), _normalize_cst(formatted))
+
+    def test_numeric_literal_case_is_ignored_in_syntax(self):
+        for kind, original, formatted in (
+            ("IntegerBase", "'H", "'h"),
+            ("IntegerLiteral", "FEEDFACE", "feedface"),
+            ("UnbasedUnsizedLiteral", "'X", "'x"),
+            ("RealLiteral", "1E-3", "1e-3"),
+        ):
+            with self.subTest(kind=kind):
+                self.assertEqual(
+                    _normalize_cst({"kind": kind, "text": original}),
+                    _normalize_cst({"kind": kind, "text": formatted}))
+        self.assertNotEqual(
+            _normalize_cst({"kind": "IntegerLiteral", "text": "FEEDFACE"}),
+            _normalize_cst({"kind": "IntegerLiteral", "text": "FEEDFACD"}))
+        self.assertNotEqual(
+            _normalize_cst({"kind": "Identifier", "text": "FEEDFACE"}),
+            _normalize_cst({"kind": "Identifier", "text": "feedface"}))
+
+    def test_numeric_case_in_macro_text_remains_significant(self):
+        for original in (
+            {"kind": "DefineDirective", "name": {"text": "M"},
+             "body": [{"kind": "IntegerLiteral", "text": "FEEDFACE"}]},
+            {"kind": "MacroActualArgument",
+             "tokens": [{"kind": "IntegerLiteral", "text": "FEEDFACE"}]},
+        ):
+            with self.subTest(original=original):
+                changed = copy.deepcopy(original)
+                token = (changed.get("body") or changed.get("tokens")
+                         or changed["disabledTokens"])[0]
+                token["text"] = "feedface"
+                self.assertNotEqual(_normalize_cst(original),
+                                    _normalize_cst(changed))
+
+    def test_disabled_numeric_case_is_ignored_outside_macro_calls(self):
+        original = {"disabledTokens": [
+            {"kind": "IntegerLiteral", "text": "1"},
+            {"kind": "IntegerBase", "text": "'h"},
+            {"kind": "Identifier", "text": "X"}]}
+        changed = copy.deepcopy(original)
+        changed["disabledTokens"][2]["text"] = "x"
+        self.assertEqual(_normalize_cst(original), _normalize_cst(changed))
+
+        original = {"disabledTokens": [
+            {"kind": "Directive", "text": "`M"},
+            {"kind": "OpenParenthesis", "text": "("},
+            {"kind": "IntegerLiteral", "text": "1'hX"},
+            {"kind": "CloseParenthesis", "text": ")"}]}
+        changed = copy.deepcopy(original)
+        changed["disabledTokens"][2]["text"] = "1'hx"
+        self.assertNotEqual(_normalize_cst(original), _normalize_cst(changed))
 
     def test_field_names_are_not_treated_as_locations(self):
         for key in ("start", "end", "location", "line", "column", "offset"):
@@ -225,6 +283,8 @@ class SlangCSTTests(unittest.TestCase):
     def test_formatting_changes_compare_equal(self):
         cases = [
             ('module m; endmodule', '\nmodule  m ;\n\nendmodule\n\n'),
+            ("module m; localparam P=8'HFF; endmodule",
+             "module m; localparam P=8'hff; endmodule"),
             (
                 '`define UNUSED(x) x+1\nmodule m; endmodule',
                 '`define UNUSED(x)  x + 1\n\nmodule m;\nendmodule\n'),
@@ -453,7 +513,8 @@ class SlangCSTTests(unittest.TestCase):
     SLANG_DRIVER, "Set SLANG_DRIVER to run runner integration tests")
 class FormatterRunnerTests(unittest.TestCase):
     def run_formatter(
-            self, sources, replacements=None, incdirs=(), formatter_rc=0):
+            self, sources, replacements=None, incdirs=(), formatter_rc=0,
+            formatter_log="formatter log\n", expected_warning_count=0):
         replacements = replacements or {}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -471,7 +532,7 @@ class FormatterRunnerTests(unittest.TestCase):
                     for relative, replacement in replacements.items():
                         (Path(cwd) / "formatted" /
                          relative).write_text(replacement)
-                    return "formatter log\n", formatter_rc
+                    return formatter_log, formatter_rc
                 parser_paths.append(cmd[-1])
                 return VerihoggFormat._run(
                     runner, [SLANG_DRIVER] + cmd[1:], cwd, timeout)
@@ -488,6 +549,7 @@ class FormatterRunnerTests(unittest.TestCase):
                     })
             for relative, source in sources.items():
                 self.assertEqual((inputs / relative).read_text(), source)
+            self.assertEqual(runner.warning_count, expected_warning_count)
             return result, parser_paths
 
     def test_file_macro_uses_identical_paths_in_both_parses(self):
@@ -515,6 +577,22 @@ class FormatterRunnerTests(unittest.TestCase):
                 result, _ = self.run_formatter(
                     {"input.sv": original}, {"input.sv": formatted})
                 self.assertEqual(result[1], expected, result[0])
+
+    def test_warning_is_recorded_only_after_equal_csts(self):
+        source = "module m; endmodule\n"
+        warning = "Warning in input.sv: unsupported construct [unsupported]\n"
+        result, _ = self.run_formatter(
+            {"input.sv": source}, formatter_log=warning,
+            expected_warning_count=1)
+        self.assertEqual(result[1], 0, result[0])
+        self.assertIn(warning, result[0])
+        self.assertIn("CST verification passed", result[0])
+
+        result, _ = self.run_formatter(
+            {"input.sv": source},
+            {"input.sv": "module changed; endmodule\n"},
+            formatter_log=warning)
+        self.assertEqual(result[1], 1, result[0])
 
     def test_same_basename_files_remain_distinct(self):
         result, paths = self.run_formatter(

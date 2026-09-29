@@ -9,10 +9,19 @@
         <a href="{{log['runner_url']}}" target="_blank"><h1>{{log['runner']|e}}</h1></a>
         <h2>{{result.name|e}}</h2>
     </header>
-    <section class="property-list">
+    <section class="property-list {{result.status}}">
       <dl>
         <div><dt>description</dt><dd>{{log['description']|e}}</dd></div>
         <div><dt>rc</dt><dd>{{result.exit_code}} (means success: {{log['tool_success']|e}})</dd></div>
+        {% if log.get('warning_count', '0')|int > 0 %}
+        <div><dt>warnings</dt><dd>{{log['warning_count']|e}}</dd></div>
+        {% endif %}
+        {% if result.status.value == "test-unverified" %}
+        <div><dt>formatter result</dt><dd>Original source rejected by Slang; formatted CST was not compared</dd></div>
+        {% endif %}
+        {% if result.status.value == "test-negative-pass" %}
+        <div><dt>formatter result</dt><dd>CST preserved; the source is intentionally invalid</dd></div>
+        {% endif %}
         {% if should_fail_because|length %}
         <div><dt>should_fail_because</dt><dd> {{log['should_fail_because']|e}}</dd></div>
         {% endif %}

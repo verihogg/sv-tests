@@ -7,6 +7,9 @@
   --black: #2C2C2E;
   --red: #ED5545;
   --green: #63C366;
+  --yellow: #F0C94A;
+  --blue: #72B9E8;
+  --unverified: #B9BBC5;
   --accent: #1226AA;
   /* Padding */
   --gap-l:30px;
@@ -507,12 +510,93 @@ table.dataTable, table.dataTable th, table.dataTable td {
 
 /******** TEST STATUS ********/
 
+.status-legend {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background-color: var(--light-gray);
+}
+
+.status-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.status-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-legend p {
+  margin: 4px 0 0;
+}
+
+.status-swatch {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--black);
+  border-radius: 3px;
+}
+
+.status-swatch-varied {
+  background: linear-gradient(90deg, var(--green) 50%, var(--red) 50%);
+}
+
+.negative-pass-example,
+td[data-negative-passes]::before {
+  display: inline-block;
+  background-color: var(--blue);
+  color: var(--black);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+td[data-negative-passes]::before {
+  content: attr(data-negative-passes);
+  margin-left: 5px;
+  font-size: 0.75em;
+}
+
+.unverified-example,
+td[data-unverified]::after {
+  display: inline-block;
+  background-color: var(--unverified);
+  color: var(--black);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+td[data-unverified]::after {
+  content: attr(data-unverified);
+  margin-left: 5px;
+  font-size: 0.75em;
+}
+
 .test-failed {
   background-color: var(--red);
 }
 
 .test-passed {
   background-color: var(--green);
+}
+
+.test-warning {
+  background-color: var(--yellow);
+}
+
+.test-negative-pass {
+  background-color: var(--blue);
+}
+
+.test-unverified {
+  background-color: var(--unverified);
+  color: var(--black) !important;
 }
 
 .test-varied {
@@ -739,6 +823,19 @@ section.log {
 
 .c_test-details-panel > .p_tests-list > .p_item.s_passed {
   background-color: var(--green);
+}
+
+.c_test-details-panel > .p_tests-list > .p_item.s_warning {
+  background-color: var(--yellow);
+}
+
+.c_test-details-panel > .p_tests-list > .p_item.s_negative_pass {
+  background-color: var(--blue);
+}
+
+.c_test-details-panel > .p_tests-list > .p_item.s_unverified {
+  background-color: var(--unverified);
+  color: var(--black);
 }
 
 .c_test-details-panel > .p_tests-list > .p_item.s_selected {

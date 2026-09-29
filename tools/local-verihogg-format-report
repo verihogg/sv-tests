@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# < 1 || $# > 2 )); then
+  echo "Usage: tools/local-verihogg-format-report FORMATTER_SOURCE_DIR [SLANG_DRIVER]" >&2
+  exit 2
+fi
+
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+formatter_root=$(cd "$1" && pwd)
+slang_driver=${2:-${SLANG_DRIVER:-slang-driver}}
+jobs=${JOBS:-4}
+
+if [[ $slang_driver == */* ]]; then
+  slang_driver=$(realpath "$slang_driver")
+else
+  slang_driver=$(command -v "$slang_driver")
+fi
+
+cmake --build "$formatter_root/build" --target verihogg-format -j "$jobs"
+formatter_binary="$formatter_root/build/bin/verihogg-format"
+if [[ ! -x $formatter_binary || ! -x $slang_driver ]]; then
+  echo "Formatter or slang-driver is not executable" >&2
+  exit 2
+fi
+
+cd "$repo_root"
+mkdir -p out/runners/bin
+ln -sfn "$formatter_binary" out/runners/bin/verihogg-format
+ln -sfn "$slang_driver" out/runners/bin/slang-driver
+
+# Force all test logs to refresh: Makefile targets otherwise depend only on test
+# sources, so a rebuilt formatter alone would leave stale results in the HTML.
+RUNNERS_FILTER=VerihoggFormat make -B -j "$jobs" report
+printf 'Report: %s/out/report/index.html\n' "$repo_root"
