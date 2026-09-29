@@ -284,7 +284,7 @@ jobs:
           ./.github/workflows/summary.sh
           ./.github/workflows/report.sh
       - name: Update sv-tests-results repository
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         run: |
           eval $(ssh-agent -s)
           ssh-add - <<< "${{ secrets.REPORT_DEPLOY_KEY }}"
@@ -293,7 +293,7 @@ jobs:
           ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
           ./.github/workflows/update_report.sh
       - name: Prepare artifacts for PR commenter
-        if: github.event_name == 'pull_request'
+        if: github.ref != 'refs/heads/master'
         run: |
           mkdir $TESTS_SUMMARY_DIR
           echo ${{ github.event.number }} > $TESTS_SUMMARY_DIR/issue_num
@@ -310,27 +310,11 @@ jobs:
 
       - name: Upload artifacts for summary
         uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request'
+        if: github.ref != 'refs/heads/master'
         with:
           name: tests_summary
           path: |
             ./tests_summary/
-      - name: Find artifacts that are no longer needed
-        id: get-artifacts-to-delete
-        if: github.event_name == 'pull_request'
-        run: |
-          artifacts=$(find ./out -type d -name 'report_*' -exec basename {} \;)
-          echo $artifacts
-          artifacts="${artifacts//'%'/'%25'}"
-          artifacts="${artifacts//$'\n'/'%0A'}"
-          artifacts="${artifacts//$'\r'/'%0D'}"
-          echo "artifacts=$artifacts" >> GITHUB_OUTPUT
-          echo $artifacts
-      - name: Delete Old Artifacts
-        if: github.event_name == 'pull_request'
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: ${{ steps.get-artifacts-to-delete.outputs.artifacts }}
   Automerge:
     name: Automerge dependabot pull requests
     permissions:
