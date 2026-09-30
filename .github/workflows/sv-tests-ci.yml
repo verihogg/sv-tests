@@ -235,6 +235,7 @@ jobs:
           apt-get update -qq
           apt-get install -y git
           git config --global --add safe.directory '*'
+          git config --global url.https://github.com/.insteadOf git://github.com/
       - name: Checkout code
         uses: actions/checkout@v7
       - name: Setup python
