@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/6.6.6'] = [["","net_supply0",2,"logs/VerihoggFormat/generated/nets/6.6.6--net_supply0.sv.log.html","tests/generated/nets/6.6.6--net_supply0.sv.html"],["","net_supply1",2,"logs/VerihoggFormat/generated/nets/6.6.6--net_supply1.sv.log.html","tests/generated/nets/6.6.6--net_supply1.sv.html"]]

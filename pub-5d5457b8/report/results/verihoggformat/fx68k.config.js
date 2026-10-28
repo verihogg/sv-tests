@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/fx68k'] = [["cores","fx68k",2,"logs/VerihoggFormat/generated/fx68k/fx68k.sv.log.html","third_party/cores/fx68k/fx68k.sv.html"]]

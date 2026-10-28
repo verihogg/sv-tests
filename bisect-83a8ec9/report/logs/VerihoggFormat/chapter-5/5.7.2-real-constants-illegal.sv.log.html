@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" type="text/css" href="../../../log.css">
+  </head>
+  <body>
+    <header class="test-unverified">
+        <a href="https://github.com/verihogg/verihogg-format/tree/5d5457b8b35be1cb61f4f68d83b3362cc486df2f" target="_blank"><h1>VerihoggFormat</h1></a>
+        <h2>real-constants-illegal</h2>
+    </header>
+    <section class="property-list test-unverified">
+      <dl>
+        <div><dt>description</dt><dd>Examples of real literal constants</dd></div>
+        <div><dt>rc</dt><dd>1 (means success: 0)</dd></div>
+        <div><dt>formatter result</dt><dd>Original source rejected by Slang; formatted CST was not compared</dd></div>
+        <div><dt>tags</dt><dd>5.7.2</dd></div>
+        <div>
+          <dt>incdirs</dt>
+          <dd><ul>
+            <li>/home/darya/verilog/sv-tests/tests/chapter-5<li>
+          </ul></dd>
+        </div>
+        <div><dt>top module</dt><dd></dd></div>
+        <div><dt>type</dt><dd>parsing elaboration</dd></div>
+        <div><dt>results group</dt><dd><em></em></dd></div>
+        <div><dt>mode</dt><dd>parsing</dd></div>
+        <div>
+          <dt>files</dt>
+          <dd><ul>
+            <li><a href="../../../tests/chapter-5/5.7.2-real-constants-illegal.sv.html" target="file-frame">tests/chapter-5/5.7.2-real-constants-illegal.sv</a><li>
+          </ul></dd>
+        </div>
+        <div><dt>defines</dt><dd><code></code></dd></div>
+        <div><dt>completed</dt><dd>2026-10-26 14:17:18</dd></div>
+        <div><dt>time elapsed</dt><dd>0.022s</dd></div>
+        <div><dt>ram usage</dt><dd>20760 KB</dd></div>
+      </dl>
+    </section>
+    <section class="log">
+      <pre></pre>
+      <pre>verihogg-format --inplace /home/darya/verilog/sv-tests/out/tmp/tmptnbdqy1g/formatted/5.7.2-real-constants-illegal.sv</pre>
+      <pre>slang-driver (original) /home/darya/verilog/sv-tests/out/tmp/tmptnbdqy1g/comparison/5.7.2-real-constants-illegal.sv</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:20:8: error: expected identifier</pre>
+      <pre>    a = .12;</pre>
+      <pre>       ^</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:20:10: error: expected identifier</pre>
+      <pre>    a = .12;</pre>
+      <pre>         ^</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:21:11: error: expected fractional digits after decimal</pre>
+      <pre>    a = 9.;</pre>
+      <pre>          ^</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:22:11: error: expected fractional digits after decimal</pre>
+      <pre>    a = 4.E3;</pre>
+      <pre>          ^</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:23:8: error: expected identifier</pre>
+      <pre>    a = .2e-7;</pre>
+      <pre>       ^</pre>
+      <pre>comparison/5.7.2-real-constants-illegal.sv:23:10: error: expected identifier</pre>
+      <pre>    a = .2e-7;</pre>
+      <pre>         ^</pre>
+      <pre></pre>
+    </section>
+  </body>
+</html>

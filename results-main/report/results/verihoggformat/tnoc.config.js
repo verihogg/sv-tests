@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/tnoc'] = [["cores","TNoC",2,"logs/VerihoggFormat/generated/tnoc/tnoc.sv.log.html","third_party/cores/tnoc/rtl/bcm/tbcm_counter.sv.html"]]

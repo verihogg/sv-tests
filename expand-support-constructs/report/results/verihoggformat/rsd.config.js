@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/rsd'] = [["cores","rsd",2,"logs/VerihoggFormat/generated/rsd/rsd.sv.log.html","third_party/cores/rsd/Processor/Src/MicroArchConf.sv.html"]]

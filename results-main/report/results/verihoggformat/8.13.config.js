@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/8.13'] = [["","inheritance",2,"logs/VerihoggFormat/chapter-8/8.13--inheritance.sv.log.html","tests/chapter-8/8.13--inheritance.sv.html"]]

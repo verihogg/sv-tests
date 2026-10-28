@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/8.26.3'] = [["","type_access_extends",2,"logs/VerihoggFormat/chapter-8/8.26.3--type_access_extends.sv.log.html","tests/chapter-8/8.26.3--type_access_extends.sv.html"],["","type_access_implements",2,"logs/VerihoggFormat/chapter-8/8.26.3--type_access_implements.sv.log.html","tests/chapter-8/8.26.3--type_access_implements.sv.html"]]

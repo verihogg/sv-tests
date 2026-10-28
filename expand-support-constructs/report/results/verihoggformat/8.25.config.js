@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/8.25'] = [["","parameters",1,"logs/VerihoggFormat/chapter-8/8.5--parameters.sv.log.html","tests/chapter-8/8.5--parameters.sv.html"],["","parametrized_class_extend",2,"logs/VerihoggFormat/chapter-8/8.25--parametrized_class_extend.sv.log.html","tests/chapter-8/8.25--parametrized_class_extend.sv.html"]]

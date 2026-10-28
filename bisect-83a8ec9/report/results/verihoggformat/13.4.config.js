@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/13.4'] = [["","function",2,"logs/VerihoggFormat/chapter-13/13.4--function-label.sv.log.html","tests/chapter-13/13.4--function-label.sv.html"],["","function",2,"logs/VerihoggFormat/chapter-13/13.4--function.sv.log.html","tests/chapter-13/13.4--function.sv.html"]]

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" type="text/css" href="../../log.css">
+  </head>
+  <body>
+    <header class="test-unverified">
+        <a href="https://github.com/verihogg/verihogg-format/tree/5d5457b8b35be1cb61f4f68d83b3362cc486df2f" target="_blank"><h1>VerihoggFormat</h1></a>
+        <h2>sanity</h2>
+    </header>
+    <section class="property-list test-unverified">
+      <dl>
+        <div><dt>description</dt><dd>A simple module that should fail during parsing</dd></div>
+        <div><dt>rc</dt><dd>1 (means success: 0)</dd></div>
+        <div><dt>formatter result</dt><dd>Original source rejected by Slang; formatted CST was not compared</dd></div>
+        <div><dt>tags</dt><dd>sanity</dd></div>
+        <div>
+          <dt>incdirs</dt>
+          <dd><ul>
+            <li>/home/darya/verilog/sv-tests/tests<li>
+          </ul></dd>
+        </div>
+        <div><dt>top module</dt><dd></dd></div>
+        <div><dt>type</dt><dd>parsing elaboration</dd></div>
+        <div><dt>results group</dt><dd><em></em></dd></div>
+        <div><dt>mode</dt><dd>parsing</dd></div>
+        <div>
+          <dt>files</dt>
+          <dd><ul>
+            <li><a href="../../tests/sanity.sv.html" target="file-frame">tests/sanity.sv</a><li>
+          </ul></dd>
+        </div>
+        <div><dt>defines</dt><dd><code></code></dd></div>
+        <div><dt>completed</dt><dd>2026-10-26 11:55:05</dd></div>
+        <div><dt>time elapsed</dt><dd>0.021s</dd></div>
+        <div><dt>ram usage</dt><dd>21360 KB</dd></div>
+      </dl>
+    </section>
+    <section class="log">
+      <pre></pre>
+      <pre>verihogg-format --inplace -I/home/darya/verilog/sv-tests/out/tmp/tmpa_thcrxu/formatted/. -I/home/darya/verilog/sv-tests/tests /home/darya/verilog/sv-tests/out/tmp/tmpa_thcrxu/formatted/sanity.sv</pre>
+      <pre>slang-driver (original) /home/darya/verilog/sv-tests/out/tmp/tmpa_thcrxu/comparison/sanity.sv</pre>
+      <pre>comparison/sanity.sv:23:9: error: expected a declaration name</pre>
+      <pre>        wire clk;</pre>
+      <pre>        ^</pre>
+      <pre></pre>
+    </section>
+  </body>
+</html>

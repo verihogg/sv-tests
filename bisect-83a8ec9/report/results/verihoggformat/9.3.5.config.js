@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/9.3.5'] = [["","statement_labels_par",2,"logs/VerihoggFormat/chapter-9/9.3.5--statement_labels_par.sv.log.html","tests/chapter-9/9.3.5--statement_labels_par.sv.html"],["","statement_labels_seq",1,"logs/VerihoggFormat/chapter-9/9.3.5--statement_labels_seq.sv.log.html","tests/chapter-9/9.3.5--statement_labels_seq.sv.html"]]

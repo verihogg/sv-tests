@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/16.14'] = [["","assume_property_test",2,"logs/VerihoggFormat/chapter-16/16.14--assume-property.sv.log.html","tests/chapter-16/16.14--assume-property.sv.html"]]

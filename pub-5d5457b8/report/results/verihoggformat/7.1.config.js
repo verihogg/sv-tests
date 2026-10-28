@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/7.1'] = [["","basic-packed-structures",2,"logs/VerihoggFormat/chapter-7/structures/packed/basic.sv.log.html","tests/chapter-7/structures/packed/basic.sv.html"],["","basic-unpacked-structures",2,"logs/VerihoggFormat/chapter-7/structures/unpacked/basic.sv.log.html","tests/chapter-7/structures/unpacked/basic.sv.html"]]

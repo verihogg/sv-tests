@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/6.20.3'] = [["","parameter_type",2,"logs/VerihoggFormat/chapter-6/6.20.3--parameter_type.sv.log.html","tests/chapter-6/6.20.3--parameter_type.sv.html"]]

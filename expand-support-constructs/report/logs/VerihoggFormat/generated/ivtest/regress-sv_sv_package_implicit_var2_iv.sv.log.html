@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" type="text/css" href="../../../../log.css">
+  </head>
+  <body>
+    <header class="test-unverified">
+        <a href="https://github.com/verihogg/verihogg-format/tree/5d5457b8b35be1cb61f4f68d83b3362cc486df2f" target="_blank"><h1>VerihoggFormat</h1></a>
+        <h2>regress-sv_sv_package_implicit_var2_iv</h2>
+    </header>
+    <section class="property-list test-unverified">
+      <dl>
+        <div><dt>description</dt><dd>Test imported from ivtest</dd></div>
+        <div><dt>rc</dt><dd>1 (means success: 0)</dd></div>
+        <div><dt>formatter result</dt><dd>Original source rejected by Slang; formatted CST was not compared</dd></div>
+        <div><dt>tags</dt><dd>ivtest</dd></div>
+        <div>
+          <dt>incdirs</dt>
+          <dd><ul>
+            <li>/home/darya/verilog/sv-tests/third_party/tools/icarus/ivtest<li>
+            <li>/home/darya/verilog/sv-tests/third_party/tools/icarus/ivtest/ivltests<li>
+          </ul></dd>
+        </div>
+        <div><dt>top module</dt><dd></dd></div>
+        <div><dt>type</dt><dd>simulation elaboration parsing</dd></div>
+        <div><dt>results group</dt><dd>imported</dd></div>
+        <div><dt>mode</dt><dd>parsing</dd></div>
+        <div>
+          <dt>files</dt>
+          <dd><ul>
+            <li><a href="../../../../third_party/tools/icarus/ivtest/ivltests/sv_package_implicit_var2.v.html" target="file-frame">third_party/tools/icarus/ivtest/ivltests/sv_package_implicit_var2.v</a><li>
+          </ul></dd>
+        </div>
+        <div><dt>defines</dt><dd><code></code></dd></div>
+        <div><dt>completed</dt><dd>2026-10-24 21:19:54</dd></div>
+        <div><dt>time elapsed</dt><dd>0.018s</dd></div>
+        <div><dt>ram usage</dt><dd>20564 KB</dd></div>
+      </dl>
+    </section>
+    <section class="log">
+      <pre></pre>
+      <pre>verihogg-format --inplace /home/darya/verilog/sv-tests/out/tmp/tmpki17awbx/formatted/sv_package_implicit_var2.v</pre>
+      <pre>slang-driver (original) /home/darya/verilog/sv-tests/out/tmp/tmpki17awbx/comparison/sv_package_implicit_var2.v</pre>
+      <pre>comparison/sv_package_implicit_var2.v:5:3: error: expected member</pre>
+      <pre>  [3:0] x; // This is a syntax error</pre>
+      <pre>  ^</pre>
+      <pre>comparison/sv_package_implicit_var2.v:5:10: error: expected a declaration name</pre>
+      <pre>  [3:0] x; // This is a syntax error</pre>
+      <pre>         ^</pre>
+      <pre>comparison/sv_package_implicit_var2.v:6:1: error: unexpected &#39;endpackage&#39; delimiter</pre>
+      <pre>endpackage</pre>
+      <pre>^~~~~~~~~~</pre>
+      <pre></pre>
+    </section>
+  </body>
+</html>

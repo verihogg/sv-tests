@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/6.6.8'] = [["","interconnect",2,"logs/VerihoggFormat/chapter-6/6.6.8--interconnect.sv.log.html","tests/chapter-6/6.6.8--interconnect.sv.html"]]

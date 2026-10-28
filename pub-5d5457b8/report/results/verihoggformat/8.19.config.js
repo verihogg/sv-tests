@@ -1,0 +1,1 @@
+config_loader_data['verihoggformat/8.19'] = [["","global_constant",2,"logs/VerihoggFormat/chapter-8/8.19--global_constant.sv.log.html","tests/chapter-8/8.19--global_constant.sv.html"],["","instance_constant",2,"logs/VerihoggFormat/chapter-8/8.19--instance_constant.sv.log.html","tests/chapter-8/8.19--instance_constant.sv.html"]]
