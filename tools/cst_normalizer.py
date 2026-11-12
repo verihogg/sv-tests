@@ -346,3 +346,126 @@ def normalize_cst(obj):
     """Return a new CST retaining tokens, directives and significant trivia."""
     tree = _prepare(obj)
     return _Normalizer(tree).normalize(tree)
+
+
+def _line_macro_names(tree):
+    dependencies = {}
+    for node in _walk(tree):
+        if node.get("kind") not in {"DefineDirective", "$InactiveDefine"}:
+            continue
+        name = node.get("name", {}).get("text", "")
+        dependencies.setdefault(name, set()).update(
+            token.get("text", "")[1:]
+            for token in node.get("body", [])
+            if token.get("kind") == "Directive")
+
+    names = {"__LINE__"}
+    while True:
+        new_names = {
+            name for name, refs in dependencies.items() if refs & names
+        } - names
+        if not new_names:
+            return names
+        names.update(new_names)
+
+
+def _macro_call_lines(source, names):
+    """Find logical call lines, excluding comments and string literals."""
+    calls = {name: [] for name in names}
+    index = 0
+    line = 1
+    line_offset = 0
+    while index < len(source):
+        char = source[index]
+        following = source[index + 1:index + 2]
+        if char == "\n":
+            line += 1
+        elif char == "/" and following == "/":
+            end = source.find("\n", index + 2)
+            index = len(source) if end < 0 else end
+            continue
+        elif char == "/" and following == "*":
+            end = source.find("*/", index + 2)
+            if end < 0:
+                break
+            line += source.count("\n", index, end + 2)
+            index = end + 2
+            continue
+        elif char == '"':
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                elif source[index] == '"':
+                    break
+                else:
+                    if source[index] == "\n":
+                        line += 1
+                    index += 1
+        elif char == "`":
+            match = re.match(r"[a-zA-Z_][a-zA-Z_0-9$]*", source[index + 1:])
+            if match:
+                name = match.group()
+                if name == "line":
+                    directive = source[index + len(name) + 1:].split("\n", 1)[0]
+                    number = re.match(r"[ \t]+([0-9]+)[ \t]+\"", directive)
+                    if number:
+                        # A `line directive numbers the following source line.
+                        line_offset = int(number.group(1)) - line - 1
+                if name in calls:
+                    calls[name].append(line + line_offset)
+                index += len(name) + 1
+                continue
+        index += 1
+    return calls
+
+
+def _line_expansion_pairs(original, formatted, original_source,
+                          formatted_source):
+    names = _line_macro_names(original) & _line_macro_names(formatted)
+    original_calls = _macro_call_lines(original_source, names)
+    formatted_calls = _macro_call_lines(formatted_source, names)
+    return {
+        pair
+        for name in names
+        if len(original_calls[name]) == len(formatted_calls[name])
+        for pair in zip(original_calls[name], formatted_calls[name])
+    }
+
+
+def csts_match(original, formatted, original_source, formatted_source):
+    """Compare CSTs while allowing only relocated `__LINE__ expansions."""
+    original = normalize_cst(original)
+    formatted = normalize_cst(formatted)
+    if original == formatted:
+        return True
+
+    line_pairs = _line_expansion_pairs(original, formatted, original_source,
+                                       formatted_source)
+
+    def equal(lhs, rhs, in_definition=False):
+        if type(lhs) is not type(rhs):
+            return False
+        if isinstance(lhs, list):
+            return len(lhs) == len(rhs) and all(
+                equal(left, right, in_definition)
+                for left, right in zip(lhs, rhs))
+        if isinstance(lhs, dict):
+            if lhs.keys() != rhs.keys():
+                return False
+            in_definition |= lhs.get("kind") in {"DefineDirective",
+                                                  "$InactiveDefine"}
+            if (not in_definition and lhs.get("kind") == "IntegerLiteral"
+                    and rhs.get("kind") == "IntegerLiteral"
+                    and lhs.get("fromExpansion") is True
+                    and rhs.get("fromExpansion") is True
+                    and lhs.get("text", "").isdecimal()
+                    and rhs.get("text", "").isdecimal()
+                    and (int(lhs["text"]), int(rhs["text"])) in line_pairs):
+                return all(
+                    key == "text" or equal(lhs[key], rhs[key], in_definition)
+                    for key in lhs)
+            return all(equal(lhs[key], rhs[key], in_definition) for key in lhs)
+        return lhs == rhs
+
+    return equal(original, formatted)

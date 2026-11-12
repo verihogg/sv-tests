@@ -559,7 +559,7 @@ class FormatterRunnerTests(unittest.TestCase):
         self.assertEqual(len(paths), 2)
         self.assertEqual(paths[0], paths[1])
 
-    def test_layout_passes_but_string_and_line_changes_fail(self):
+    def test_layout_and_line_relocation_pass_but_string_changes_fail(self):
         cases = [
             (
                 'module m; localparam P=1+2; endmodule\n',
@@ -570,13 +570,75 @@ class FormatterRunnerTests(unittest.TestCase):
                 'module m; localparam S="ab"; endmodule\n', 1),
             (
                 'module m; localparam P=`__LINE__; endmodule\n',
-                'module m;\nlocalparam P=`__LINE__; endmodule\n', 1),
+                'module m;\nlocalparam P=`__LINE__; endmodule\n', 0),
         ]
         for original, formatted, expected in cases:
             with self.subTest(original=original):
                 result, _ = self.run_formatter(
                     {"input.sv": original}, {"input.sv": formatted})
                 self.assertEqual(result[1], expected, result[0])
+
+    def test_line_macro_inside_wrapper_can_move(self):
+        original = ('`define VALUE(x) x + `__LINE__\n'
+                    'module m; localparam P=`VALUE(7); endmodule\n')
+        formatted = ('`define VALUE(x) x + `__LINE__\n'
+                     'module m;\nlocalparam P=`VALUE(7); endmodule\n')
+        result, _ = self.run_formatter({"input.sv": original},
+                                       {"input.sv": formatted})
+        self.assertEqual(result[1], 0, result[0])
+
+    def test_line_macro_after_line_directive_can_move(self):
+        original = ('`line 100 "source.sv" 0\n'
+                    'module m; localparam P=`__LINE__; endmodule\n')
+        formatted = ('`line 100 "source.sv" 0\n'
+                     'module m;\nlocalparam P=`__LINE__; endmodule\n')
+        result, _ = self.run_formatter({"input.sv": original},
+                                       {"input.sv": formatted})
+        self.assertEqual(result[1], 0, result[0])
+
+    def test_line_macro_inside_included_wrapper_can_move(self):
+        original = ('`include "value.svh"\n'
+                    'module m; localparam P=`VALUE(7); endmodule\n')
+        formatted = ('`include "value.svh"\n'
+                     'module m;\nlocalparam P=`VALUE(7); endmodule\n')
+        files = {
+            "input.sv": original,
+            "inc/value.svh": '`define VALUE(x) x + `__LINE__\n',
+        }
+        result, _ = self.run_formatter(files, {"input.sv": formatted},
+                                       incdirs=("inc", ))
+        self.assertEqual(result[1], 0, result[0])
+
+    def test_line_relocation_does_not_hide_other_changes(self):
+        original = ('`define VALUE(x) x + `__LINE__\n'
+                    'module m; localparam P=`VALUE(7); endmodule\n')
+        formatted = ('`define VALUE(x) x + `__LINE__\n'
+                     'module m;\nlocalparam P=`VALUE(8); endmodule\n')
+        result, _ = self.run_formatter({"input.sv": original},
+                                       {"input.sv": formatted})
+        self.assertEqual(result[1], 1, result[0])
+
+    def test_line_relocation_does_not_hide_stringification(self):
+        original = ('`define STR(x) `"x`"\n'
+                    'module m; localparam S=`STR(a + b); '
+                    'localparam P=`__LINE__; endmodule\n')
+        formatted = ('`define STR(x) `"x`"\n'
+                     'module m;\nlocalparam S=`STR(a+b); '
+                     'localparam P=`__LINE__; endmodule\n')
+        result, _ = self.run_formatter({"input.sv": original},
+                                       {"input.sv": formatted})
+        self.assertEqual(result[1], 1, result[0])
+
+    def test_line_relocation_does_not_hide_changed_macro_number(self):
+        original = ('`define NUMBER 2\n'
+                    'module m; localparam A=`NUMBER; '
+                    'localparam P=`__LINE__; endmodule\n')
+        formatted = ('`define NUMBER 3\n'
+                     'module m;\nlocalparam A=`NUMBER; '
+                     'localparam P=`__LINE__; endmodule\n')
+        result, _ = self.run_formatter({"input.sv": original},
+                                       {"input.sv": formatted})
+        self.assertEqual(result[1], 1, result[0])
 
     def test_warning_is_recorded_only_after_equal_csts(self):
         source = "module m; endmodule\n"

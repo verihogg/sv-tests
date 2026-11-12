@@ -18,7 +18,7 @@ import signal
 import subprocess
 
 from BaseRunner import BaseRunner
-from cst_normalizer import normalize_cst
+from cst_normalizer import csts_match
 
 
 def kill_child_processes(parent_pid, sig=signal.SIGKILL):
@@ -138,17 +138,30 @@ class VerihoggFormat(BaseRunner):
                         log, 1) + self._profile()
                 try:
                     with open(json_path) as jf:
-                        cst = normalize_cst(json.load(jf))
+                        cst = json.load(jf)
                 except (ValueError, OSError) as e:
                     return (invocation + f"Cannot compare CST JSON: {e}\n",
                             1) + self._profile()
                 if label == "original":
                     original_csts[relative] = cst
-                elif original_csts[relative] != cst:
-                    return (
-                        invocation +
-                        f"CST mismatch between original and formatted: {relative}\n",
-                        1) + self._profile()
+                else:
+                    try:
+                        with open(os.path.join(originals_dir, relative),
+                                  "rb") as f:
+                            original_source = f.read().decode("latin1")
+                        with open(os.path.join(formatted_dir, relative),
+                                  "rb") as f:
+                            formatted_source = f.read().decode("latin1")
+                        matches = csts_match(original_csts[relative], cst,
+                                             original_source, formatted_source)
+                    except (ValueError, OSError) as e:
+                        return (invocation + f"Cannot compare CST JSON: {e}\n",
+                                1) + self._profile()
+                    if not matches:
+                        return (
+                            invocation +
+                            f"CST mismatch between original and formatted: {relative}\n",
+                            1) + self._profile()
 
         self.warning_count = warning_count
         return (invocation + fmt_log + "CST verification passed\n",
