@@ -6,6 +6,12 @@
 The purpose of this project is to find all the supported and missing SystemVerilog features in various Verilog tools.
 
 The report generated from the last passing master build can be viewed [on a dedicated dashboard:](https://chipsalliance.github.io/sv-tests-results/)
+
+For a generated `VerihoggFormat` report that also contains `constructs.html`
+and `unsupported.html`, `python3 tools/prepare-formatter-home out/report`
+adds a landing page. It moves the existing table from `index.html` to
+`report.html`; keep the report files and subdirectories together when
+publishing. Run this command once, after generating both constructs pages.
 [![Grid](./img/sv-test-grid.png)](https://chipsalliance.github.io/sv-tests-results/)
 
 History of the builds is also tracked and can be seen [on a separate page:](https://chipsalliance.github.io/sv-tests-results/history)
