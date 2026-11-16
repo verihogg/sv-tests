@@ -37,7 +37,12 @@ class VerihoggFormat(BaseRunner):
         super().__init__("VerihoggFormat", "verihogg-format", {'parsing'})
 
         self.submodule = "third_party/tools/verihogg-format"
-        self.url = f"https://github.com/verihogg/verihogg-format/tree/{self.get_commit()}"
+        repository = os.environ.get("FORMATTER_REPOSITORY")
+        revision = os.environ.get("FORMATTER_SHA")
+        if repository and revision:
+            self.url = f"https://github.com/{repository}/tree/{revision}"
+        else:
+            self.url = f"https://github.com/verihogg/verihogg-format/tree/{self.get_commit()}"
 
     def _profile(self):
         usage = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -91,8 +96,6 @@ class VerihoggFormat(BaseRunner):
             return [f"-I{d}" for d in staged + originals]
 
         fmt_cmd = [self.executable, "--inplace"]
-        fmt_cmd += include_args(formatted_dir)
-        fmt_cmd += [f"-D{d}" for d in params['defines']]
         fmt_cmd += [os.path.join(formatted_dir, f) for f in relative_files]
         fmt_log, fmt_rc = self._run(fmt_cmd, tmp_dir, timeout)
         invocation = " ".join(fmt_cmd) + "\n"
@@ -102,6 +105,10 @@ class VerihoggFormat(BaseRunner):
 
         warning_count = len(re.findall(r"^Warning(?: in\b|:)", fmt_log,
                                        re.MULTILINE))
+        if "The formatter does not support these constructs yet" in fmt_log:
+            warning_count += sum(int(count) for count in re.findall(
+                r"^  - .+?\s{2,}(\d+) occurrences?,\s+first at ", fmt_log,
+                re.MULTILINE))
 
         slang_base = [
             "slang-driver", "--parse-only", "--single-unit",
