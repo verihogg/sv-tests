@@ -260,6 +260,22 @@ class NormalizeCSTTests(unittest.TestCase):
 SLANG_DRIVER = os.environ.get("SLANG_DRIVER") or shutil.which("slang-driver")
 
 
+class FormatterUrlTests(unittest.TestCase):
+    def test_checked_out_formatter_url_override(self):
+        with mock.patch.dict(os.environ, {
+                "FORMATTER_REPOSITORY": "owner/formatter",
+                "FORMATTER_SHA": "1234567890abcdef",
+        }):
+            self.assertEqual(VerihoggFormat().url,
+                             "https://github.com/owner/formatter/tree/1234567890abcdef")
+
+    def test_default_url_uses_recorded_submodule(self):
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(VerihoggFormat, "get_commit", return_value="abc"):
+            self.assertEqual(VerihoggFormat().url,
+                             "https://github.com/verihogg/verihogg-format/tree/abc")
+
+
 @unittest.skipUnless(
     SLANG_DRIVER, "Set SLANG_DRIVER to run CST integration tests")
 class SlangCSTTests(unittest.TestCase):
@@ -514,7 +530,8 @@ class SlangCSTTests(unittest.TestCase):
 class FormatterRunnerTests(unittest.TestCase):
     def run_formatter(
             self, sources, replacements=None, incdirs=(), formatter_rc=0,
-            formatter_log="formatter log\n", expected_warning_count=0):
+            formatter_log="formatter log\n", expected_warning_count=0,
+            defines=(), commands=None):
         replacements = replacements or {}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -528,6 +545,8 @@ class FormatterRunnerTests(unittest.TestCase):
             parser_paths = []
 
             def run(cmd, cwd, timeout):
+                if commands is not None:
+                    commands.append(cmd)
                 if cmd[0] == runner.executable:
                     for relative, replacement in replacements.items():
                         (Path(cwd) / "formatted" /
@@ -544,13 +563,24 @@ class FormatterRunnerTests(unittest.TestCase):
                         [str(inputs / relative) for relative in sources],
                         "incdirs":
                         [str(inputs / relative) for relative in incdirs],
-                        "defines": [],
+                        "defines": list(defines),
                         "timeout": "30"
                     })
             for relative, source in sources.items():
                 self.assertEqual((inputs / relative).read_text(), source)
             self.assertEqual(runner.warning_count, expected_warning_count)
             return result, parser_paths
+
+    def test_defines_and_includes_go_only_to_slang(self):
+        commands = []
+        result, _ = self.run_formatter(
+            {"input.sv": "module m; endmodule\n"}, incdirs=(".",),
+            defines=("TEST=1",), commands=commands)
+        self.assertEqual(result[1], 0, result[0])
+        self.assertFalse(any(arg.startswith(("-I", "-D")) for arg in commands[0]))
+        self.assertTrue(all("-DTEST=1" in cmd for cmd in commands[1:]))
+        self.assertTrue(all(any(arg.startswith("-I") for arg in cmd)
+                            for cmd in commands[1:]))
 
     def test_file_macro_uses_identical_paths_in_both_parses(self):
         result, paths = self.run_formatter(
@@ -593,6 +623,15 @@ class FormatterRunnerTests(unittest.TestCase):
             {"input.sv": "module changed; endmodule\n"},
             formatter_log=warning)
         self.assertEqual(result[1], 1, result[0])
+
+    def test_grouped_warning_occurrences_are_recorded(self):
+        summary = ("The formatter does not support these constructs yet\n"
+                   "  - assert  2 occurrences, first at input.sv:1\n"
+                   "  - cover   1 occurrence,  first at input.sv:2\n")
+        result, _ = self.run_formatter(
+            {"input.sv": "module m; endmodule\n"}, formatter_log=summary,
+            expected_warning_count=3)
+        self.assertEqual(result[1], 0, result[0])
 
     def test_same_basename_files_remain_distinct(self):
         result, paths = self.run_formatter(
